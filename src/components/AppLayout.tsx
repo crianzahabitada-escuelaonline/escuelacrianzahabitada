@@ -9,8 +9,9 @@ import {
   MessageCircle,
   User,
   X,
-  Leaf,
 } from "lucide-react";
+import logoMain from "@/assets/logo-crianza-habitada.png";
+import logoPaola from "@/assets/logo-paola-patricelli.jpg";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -32,8 +33,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Mobile header */}
       <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-card border-b">
         <div className="flex items-center gap-2">
-          <Leaf className="h-6 w-6 text-primary" />
-          <span className="font-heading font-bold text-lg text-foreground">Crianza Habitada</span>
+          <img src={logoMain} alt="Crianza Habitada" className="h-10 w-auto" />
         </div>
         <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
           {sidebarOpen ? <X /> : <Menu />}
@@ -47,9 +47,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="hidden lg:flex items-center gap-2 px-6 py-6">
-          <Leaf className="h-7 w-7 text-primary" />
-          <span className="font-heading font-bold text-xl text-foreground">Crianza Habitada</span>
+        <div className="hidden lg:flex flex-col items-center gap-2 px-6 py-4">
+          <img src={logoMain} alt="Crianza Habitada" className="h-16 w-auto" />
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1">
@@ -74,10 +73,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="p-4 mx-3 mb-4 rounded-2xl bg-secondary">
-          <p className="text-xs text-secondary-foreground font-medium">
-            🌱 "Cada niño es una semilla que necesita amor para florecer."
-          </p>
+        <div className="px-3 mb-3">
+          <div className="p-3 rounded-2xl bg-secondary text-center">
+            <img src={logoPaola} alt="Paola Patricelli" className="h-14 w-auto mx-auto mb-2 rounded-lg" />
+            <p className="text-xs text-muted-foreground">Creadora</p>
+            <p className="text-xs font-medium text-secondary-foreground">Lic. Paola Patricelli</p>
+          </div>
         </div>
       </aside>
 
