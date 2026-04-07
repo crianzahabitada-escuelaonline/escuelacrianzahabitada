@@ -9,8 +9,9 @@ import {
   MessageCircle,
   User,
   X,
-  Leaf,
 } from "lucide-react";
+import logoMain from "@/assets/logo-crianza-habitada.png";
+import logoPaola from "@/assets/logo-paola-patricelli.jpg";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
