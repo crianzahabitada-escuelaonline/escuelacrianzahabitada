@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute, AdminRoute } from "@/components/ProtectedRoute";
 import AppLayout from "@/components/AppLayout";
-import Landing from "@/pages/Landing";
+import Index from "@/pages/Index";
 import Dashboard from "@/pages/Dashboard";
 import Cursos from "@/pages/Cursos";
 import CursoDetalle from "@/pages/CursoDetalle";
@@ -29,7 +29,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/" element={<Landing />} />
+            <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             {/* Protected app pages */}
             <Route path="/dashboard" element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
