@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Pencil, UserPlus } from "lucide-react";
+import { Plus, Pencil, UserPlus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -143,13 +143,22 @@ export default function StudentManager({ students, onStudentsChanged }: StudentM
                   {student.languages ? ` · ${student.languages}` : ""}
                 </p>
               </div>
-              <button
-                onClick={() => openEdit(student)}
-                className="p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0"
-                aria-label="Editar estudiante"
-              >
-                <Pencil className="h-4 w-4 text-muted-foreground" />
-              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => openEdit(student)}
+                  className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                  aria-label="Editar estudiante"
+                >
+                  <Pencil className="h-4 w-4 text-muted-foreground" />
+                </button>
+                <button
+                  onClick={() => handleDelete(student.id, student.full_name)}
+                  className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"
+                  aria-label="Eliminar estudiante"
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
