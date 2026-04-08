@@ -538,6 +538,50 @@ export default function AdminCursos() {
 
                   {isExpanded && (
                     <div className="border-t border-border p-4 space-y-5">
+                      {/* Edit Course Form */}
+                      {editingCourseId === course.id && (
+                        <form onSubmit={handleSaveEditCourse} className="bg-muted/30 rounded-xl p-4 space-y-3">
+                          <h4 className="font-heading font-bold text-sm text-foreground flex items-center gap-1">
+                            <Pencil className="h-4 w-4" /> Editar Curso
+                          </h4>
+                          <div>
+                            <Label className="text-xs">Título</Label>
+                            <Input value={editCourseForm.title} onChange={e => setEditCourseForm({ ...editCourseForm, title: e.target.value })} required />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Descripción</Label>
+                            <Textarea value={editCourseForm.description} onChange={e => setEditCourseForm({ ...editCourseForm, description: e.target.value })} rows={2} />
+                          </div>
+                          <div className="grid grid-cols-3 gap-3">
+                            <div>
+                              <Label className="text-xs">Categoría</Label>
+                              <Input value={editCourseForm.category} onChange={e => setEditCourseForm({ ...editCourseForm, category: e.target.value })} />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Precio (USD)</Label>
+                              <Input type="number" step="0.01" value={editCourseForm.price} onChange={e => setEditCourseForm({ ...editCourseForm, price: e.target.value })} />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Portada</Label>
+                              {editCourseForm.cover_url ? (
+                                <div className="flex items-center gap-2">
+                                  <img src={editCourseForm.cover_url} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                                  <Button type="button" variant="ghost" size="sm" className="text-xs h-7" onClick={() => setEditCourseForm({ ...editCourseForm, cover_url: "" })}>Quitar</Button>
+                                </div>
+                              ) : (
+                                <FileUploadButton label="Subir" icon={Image} accept="image/*"
+                                  uploading={uploadingEditCover} setUploading={setUploadingEditCover}
+                                  onUploaded={url => setEditCourseForm({ ...editCourseForm, cover_url: url })} />
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button type="submit" size="sm" disabled={savingEditCourse} className="rounded-xl">{savingEditCourse ? "Guardando..." : "Guardar Cambios"}</Button>
+                            <Button type="button" size="sm" variant="ghost" onClick={() => setEditingCourseId(null)} className="rounded-xl">Cancelar</Button>
+                          </div>
+                        </form>
+                      )}
+
                       {/* Lessons */}
                       <div>
                         <div className="flex items-center justify-between">
