@@ -127,6 +127,88 @@ export type Database = {
         }
         Relationships: []
       }
+      student_notes: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          grade: number | null
+          id: string
+          student_id: string
+          subject: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          grade?: number | null
+          id?: string
+          student_id: string
+          subject?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          grade?: number | null
+          id?: string
+          student_id?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_notes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_tasks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          status: string
+          student_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          status?: string
+          student_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          status?: string
+          student_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_tasks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
           age: number | null
