@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, CheckCircle, Circle, X } from "lucide-react";
+import { Plus, Pencil, Trash2, CheckCircle, Circle, Upload, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ interface TaskManagerProps {
   students: Student[];
   tasks: Task[];
   onTasksChanged: () => void;
+  readOnly?: boolean;
 }
 
 type FormData = {
@@ -46,7 +47,7 @@ type FormData = {
 
 const emptyForm: FormData = { title: "", description: "", student_id: "", due_date: "" };
 
-export default function TaskManager({ students, tasks, onTasksChanged }: TaskManagerProps) {
+export default function TaskManager({ students, tasks, onTasksChanged, readOnly = false }: TaskManagerProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -151,30 +152,37 @@ export default function TaskManager({ students, tasks, onTasksChanged }: TaskMan
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <h2 className="text-lg font-heading font-bold text-foreground">Gestión de Tareas</h2>
+        <h2 className="text-lg font-heading font-bold text-foreground">
+          {readOnly ? "Mis Tareas Asignadas" : "Gestión de Tareas"}
+        </h2>
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Select value={filterStudent} onValueChange={setFilterStudent}>
-            <SelectTrigger className="w-full sm:w-[180px] h-9 text-sm">
-              <SelectValue placeholder="Filtrar estudiante" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              {students.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {s.full_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button size="sm" onClick={openNew} className="shrink-0">
-            <Plus className="h-4 w-4 mr-1" /> Nueva
-          </Button>
+          {!readOnly && students.length > 1 && (
+            <Select value={filterStudent} onValueChange={setFilterStudent}>
+              <SelectTrigger className="w-full sm:w-[180px] h-9 text-sm">
+                <SelectValue placeholder="Filtrar estudiante" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {students.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {!readOnly && (
+            <Button size="sm" onClick={openNew} className="shrink-0">
+              <Plus className="h-4 w-4 mr-1" /> Nueva
+            </Button>
+          )}
         </div>
       </div>
 
       {sorted.length === 0 ? (
         <div className="organic-card p-6 text-center text-muted-foreground">
-          <p>No hay tareas. ¡Creá una para empezar!</p>
+          <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          <p>{readOnly ? "No tenés tareas asignadas por el momento." : "No hay tareas. ¡Creá una para empezar!"}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -200,88 +208,92 @@ export default function TaskManager({ students, tasks, onTasksChanged }: TaskMan
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {studentName(task.student_id)}
-                  {task.due_date ? ` · ${new Date(task.due_date).toLocaleDateString("es")}` : ""}
+                  {task.due_date ? ` · Entrega: ${new Date(task.due_date).toLocaleDateString("es")}` : ""}
                 </p>
                 {task.description && (
                   <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.description}</p>
                 )}
               </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <button onClick={() => openEdit(task)} className="p-1.5 rounded-lg hover:bg-muted transition-colors" aria-label="Editar tarea">
-                  <Pencil className="h-4 w-4 text-muted-foreground" />
-                </button>
-                <button onClick={() => handleDelete(task.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors" aria-label="Eliminar tarea">
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </button>
-              </div>
+              {!readOnly && (
+                <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={() => openEdit(task)} className="p-1.5 rounded-lg hover:bg-muted transition-colors" aria-label="Editar tarea">
+                    <Pencil className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                  <button onClick={() => handleDelete(task.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors" aria-label="Eliminar tarea">
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
       )}
 
-      {/* Create / Edit dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-heading">{editingId ? "Editar Tarea" : "Nueva Tarea"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div>
-              <label className="text-sm font-medium text-foreground">Estudiante *</label>
-              <Select value={form.student_id} onValueChange={(v) => setForm({ ...form, student_id: v })}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Seleccioná un estudiante" />
-                </SelectTrigger>
-                <SelectContent>
-                  {students.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.full_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      {/* Create / Edit dialog — only for teachers */}
+      {!readOnly && (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="font-heading">{editingId ? "Editar Tarea" : "Nueva Tarea"}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-2">
+              <div>
+                <label className="text-sm font-medium text-foreground">Estudiante *</label>
+                <Select value={form.student_id} onValueChange={(v) => setForm({ ...form, student_id: v })}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Seleccioná un estudiante" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {students.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Título *</label>
+                <Input
+                  className="mt-1"
+                  maxLength={200}
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  placeholder="Ej: Leer capítulo 3"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Descripción</label>
+                <Textarea
+                  className="mt-1"
+                  maxLength={1000}
+                  rows={3}
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  placeholder="Detalles opcionales de la tarea…"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Fecha de entrega</label>
+                <Input
+                  type="date"
+                  className="mt-1"
+                  value={form.due_date}
+                  onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving ? "Guardando…" : editingId ? "Guardar" : "Crear"}
+                </Button>
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Título *</label>
-              <Input
-                className="mt-1"
-                maxLength={200}
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                placeholder="Ej: Leer capítulo 3"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Descripción</label>
-              <Textarea
-                className="mt-1"
-                maxLength={1000}
-                rows={3}
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="Detalles opcionales de la tarea…"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Fecha de entrega</label>
-              <Input
-                type="date"
-                className="mt-1"
-                value={form.due_date}
-                onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? "Guardando…" : editingId ? "Guardar" : "Crear"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

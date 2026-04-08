@@ -1,5 +1,9 @@
-import { corsHeaders } from "@supabase/supabase-js/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -17,7 +21,6 @@ Deno.serve(async (req) => {
     const { user_id, email } = await req.json();
     if (!user_id || !email) throw new Error("user_id y email son requeridos");
 
-    // Create Mercado Pago preference
     const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
       method: "POST",
       headers: {
@@ -47,12 +50,10 @@ Deno.serve(async (req) => {
     });
 
     const data = await response.json();
-
     if (!response.ok) {
       throw new Error(`Mercado Pago error: ${JSON.stringify(data)}`);
     }
 
-    // Create pending subscription
     await supabase.from("subscriptions").upsert({
       user_id,
       status: "pending",

@@ -1,5 +1,9 @@
-import { corsHeaders } from "@supabase/supabase-js/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -19,7 +23,6 @@ Deno.serve(async (req) => {
       throw new Error("Faltan campos requeridos");
     }
 
-    // Create purchase record
     const { data: purchase, error: purchaseError } = await supabase
       .from("product_purchases")
       .insert({
@@ -35,7 +38,6 @@ Deno.serve(async (req) => {
 
     const origin = req.headers.get("origin") || "https://escuelacrianzahabitada.lovable.app";
 
-    // Create Mercado Pago preference
     const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
       method: "POST",
       headers: {
