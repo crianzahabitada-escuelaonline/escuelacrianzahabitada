@@ -388,8 +388,9 @@ export default function AdminCursos() {
       </div>
 
       <Tabs defaultValue="courses" className="space-y-4">
-        <TabsList className="rounded-xl">
+        <TabsList className="rounded-xl flex-wrap">
           <TabsTrigger value="courses" className="rounded-xl gap-1"><BookOpen className="h-4 w-4" /> Cursos</TabsTrigger>
+          <TabsTrigger value="products" className="rounded-xl gap-1"><ShoppingBag className="h-4 w-4" /> Productos</TabsTrigger>
           <TabsTrigger value="students" className="rounded-xl gap-1"><GraduationCap className="h-4 w-4" /> Estudiantes</TabsTrigger>
           <TabsTrigger value="calendar" className="rounded-xl gap-1"><Calendar className="h-4 w-4" /> Calendario</TabsTrigger>
         </TabsList>
