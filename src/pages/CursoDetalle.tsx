@@ -159,7 +159,10 @@ export default function CursoDetalle() {
                   <>
                     <Lock className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
                     <p className="text-foreground font-medium">{currentLesson.title}</p>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    {currentLesson.description && (
+                      <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">{currentLesson.description}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground/70 mt-3">
                       {canAccessPaid ? "Sin video disponible" : "Compra este curso o activa tu membresía para reproducir"}
                     </p>
                   </>
