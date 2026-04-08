@@ -112,6 +112,17 @@ export default function StudentManager({ students, onStudentsChanged }: StudentM
     }
   };
 
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`¿Estás segura de eliminar a "${name}"? Se eliminarán también sus tareas y notas.`)) return;
+    const { error } = await supabase.from("students").delete().eq("id", id);
+    if (error) {
+      toast.error("No se pudo eliminar: " + error.message);
+      return;
+    }
+    toast.success("Estudiante eliminado");
+    onStudentsChanged();
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
