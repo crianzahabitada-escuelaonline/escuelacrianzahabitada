@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -10,66 +10,67 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Plus, Trash2, Eye, EyeOff, Users, BookOpen, CheckCircle, Clock,
   ClipboardList, FileText, ChevronDown, ChevronUp, GraduationCap,
-  Calendar, Video, Grip, Play,
+  Calendar, Video, Grip, Play, Upload, Image, File, Loader2,
 } from "lucide-react";
 
+const BUCKET = "course-content";
+
 type Course = {
-  id: string;
-  title: string;
-  description: string;
-  cover_url: string;
-  content_url: string;
-  category: string;
-  is_published: boolean;
-  created_at: string;
+  id: string; title: string; description: string; cover_url: string;
+  content_url: string; category: string; is_published: boolean; created_at: string;
 };
-
 type Lesson = {
-  id: string;
-  course_id: string;
-  title: string;
-  description: string;
-  video_url: string;
-  order_num: number;
-  duration: string;
-  is_free: boolean;
+  id: string; course_id: string; title: string; description: string;
+  video_url: string; order_num: number; duration: string; is_free: boolean;
 };
-
-type Student = {
-  id: string;
-  full_name: string;
-  age: number | null;
-  tutor_id: string;
-};
-
-type Task = {
-  id: string;
-  student_id: string;
-  title: string;
-  description: string;
-  due_date: string | null;
-  status: string;
-};
-
-type Note = {
-  id: string;
-  student_id: string;
-  subject: string;
-  content: string;
-  grade: number | null;
-  created_at: string;
-};
-
+type Student = { id: string; full_name: string; age: number | null; tutor_id: string; };
+type Task = { id: string; student_id: string; title: string; description: string; due_date: string | null; status: string; };
+type Note = { id: string; student_id: string; subject: string; content: string; grade: number | null; created_at: string; };
 type CalendarEvent = {
-  id: string;
-  title: string;
-  description: string;
-  event_type: string;
-  event_date: string;
-  event_time: string;
-  is_public: boolean;
-  meeting_url: string;
+  id: string; title: string; description: string; event_type: string;
+  event_date: string; event_time: string; is_public: boolean; meeting_url: string;
 };
+type Resource = {
+  id: string; course_id: string; title: string; file_url: string; file_type: string; created_at: string;
+};
+
+// Upload helper
+async function uploadFile(file: globalThis.File, folder: string): Promise<string | null> {
+  const ext = file.name.split(".").pop();
+  const path = `${folder}/${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage.from(BUCKET).upload(path, file);
+  if (error) { toast.error("Error al subir: " + error.message); return null; }
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+function FileUploadButton({ label, icon: Icon, accept, onUploaded, uploading, setUploading }: {
+  label: string; icon: any; accept: string;
+  onUploaded: (url: string) => void;
+  uploading: boolean; setUploading: (v: boolean) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const folder = file.type.startsWith("video") ? "videos" : file.type.startsWith("image") ? "covers" : "resources";
+    const url = await uploadFile(file, folder);
+    setUploading(false);
+    if (url) onUploaded(url);
+    if (ref.current) ref.current.value = "";
+  }
+  return (
+    <div>
+      <input ref={ref} type="file" accept={accept} className="hidden" onChange={handleFile} />
+      <Button type="button" variant="outline" size="sm" className="rounded-xl gap-1 text-xs w-full"
+        onClick={() => ref.current?.click()} disabled={uploading}>
+        {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Icon className="h-3 w-3" />}
+        {uploading ? "Subiendo..." : label}
+      </Button>
+    </div>
+  );
+}
 
 export default function AdminCursos() {
   const { isAdmin, user } = useAuth();
@@ -79,6 +80,7 @@ export default function AdminCursos() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [subCount, setSubCount] = useState(0);
 
@@ -86,11 +88,19 @@ export default function AdminCursos() {
   const [showCourseForm, setShowCourseForm] = useState(false);
   const [courseForm, setCourseForm] = useState({ title: "", description: "", category: "general", content_url: "", cover_url: "" });
   const [savingCourse, setSavingCourse] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   // Lesson form
   const [lessonCourseId, setLessonCourseId] = useState<string | null>(null);
   const [lessonForm, setLessonForm] = useState({ title: "", description: "", video_url: "", duration: "", is_free: false });
   const [savingLesson, setSavingLesson] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+
+  // Resource form
+  const [resourceCourseId, setResourceCourseId] = useState<string | null>(null);
+  const [resourceForm, setResourceForm] = useState({ title: "", file_url: "" });
+  const [savingResource, setSavingResource] = useState(false);
+  const [uploadingResource, setUploadingResource] = useState(false);
 
   // Task form
   const [taskStudentId, setTaskStudentId] = useState<string | null>(null);
@@ -111,13 +121,11 @@ export default function AdminCursos() {
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
   const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isAdmin) loadAll();
-  }, [isAdmin]);
+  useEffect(() => { if (isAdmin) loadAll(); }, [isAdmin]);
 
   async function loadAll() {
     setLoading(true);
-    const [coursesRes, lessonsRes, studentsRes, tasksRes, notesRes, eventsRes, subRes] = await Promise.all([
+    const [coursesRes, lessonsRes, studentsRes, tasksRes, notesRes, eventsRes, subRes, resourcesRes] = await Promise.all([
       supabase.from("courses").select("*").order("created_at", { ascending: false }),
       supabase.from("course_lessons").select("*").order("order_num"),
       supabase.from("students").select("*").order("full_name"),
@@ -125,6 +133,7 @@ export default function AdminCursos() {
       supabase.from("student_notes").select("*").order("created_at", { ascending: false }),
       supabase.from("calendar_events").select("*").order("event_date"),
       supabase.from("subscriptions").select("*", { count: "exact", head: true }).eq("status", "active"),
+      supabase.from("course_resources").select("*").order("created_at", { ascending: false }),
     ]);
     setCourses((coursesRes.data as Course[]) || []);
     setLessons((lessonsRes.data as Lesson[]) || []);
@@ -133,6 +142,7 @@ export default function AdminCursos() {
     setNotes((notesRes.data as Note[]) || []);
     setEvents((eventsRes.data as CalendarEvent[]) || []);
     setSubCount(subRes.count || 0);
+    setResources((resourcesRes.data as Resource[]) || []);
     setLoading(false);
   }
 
@@ -190,6 +200,30 @@ export default function AdminCursos() {
     await supabase.from("course_lessons").delete().eq("id", id);
     loadAll();
     toast.success("Lección eliminada");
+  }
+
+  // ---- Resource CRUD ----
+  async function handleCreateResource(e: React.FormEvent) {
+    e.preventDefault();
+    if (!resourceCourseId || !resourceForm.file_url) return;
+    setSavingResource(true);
+    const ext = resourceForm.file_url.split(".").pop()?.toLowerCase() || "file";
+    const { error } = await supabase.from("course_resources").insert({
+      course_id: resourceCourseId, title: resourceForm.title,
+      file_url: resourceForm.file_url, file_type: ext,
+    });
+    setSavingResource(false);
+    if (error) { toast.error("Error: " + error.message); return; }
+    toast.success("Recurso agregado");
+    setResourceForm({ title: "", file_url: "" });
+    setResourceCourseId(null);
+    loadAll();
+  }
+
+  async function deleteResource(id: string) {
+    await supabase.from("course_resources").delete().eq("id", id);
+    loadAll();
+    toast.success("Recurso eliminado");
   }
 
   // ---- Task CRUD ----
@@ -271,6 +305,7 @@ export default function AdminCursos() {
   if (!isAdmin) return <div className="p-8 text-center text-muted-foreground">No tienes acceso.</div>;
 
   const courseLessons = (courseId: string) => lessons.filter(l => l.course_id === courseId);
+  const courseResources = (courseId: string) => resources.filter(r => r.course_id === courseId);
   const studentTasks = (studentId: string) => tasks.filter(t => t.student_id === studentId);
   const studentNotes = (studentId: string) => notes.filter(n => n.student_id === studentId);
 
@@ -332,12 +367,21 @@ export default function AdminCursos() {
                   <Input value={courseForm.category} onChange={e => setCourseForm({ ...courseForm, category: e.target.value })} />
                 </div>
                 <div>
-                  <Label>URL de portada</Label>
-                  <Input value={courseForm.cover_url} onChange={e => setCourseForm({ ...courseForm, cover_url: e.target.value })} placeholder="Link imagen" />
+                  <Label>Imagen de portada</Label>
+                  {courseForm.cover_url ? (
+                    <div className="flex items-center gap-2">
+                      <img src={courseForm.cover_url} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setCourseForm({ ...courseForm, cover_url: "" })} className="text-xs">Quitar</Button>
+                    </div>
+                  ) : (
+                    <FileUploadButton label="Subir imagen" icon={Image} accept="image/*"
+                      uploading={uploadingCover} setUploading={setUploadingCover}
+                      onUploaded={url => setCourseForm({ ...courseForm, cover_url: url })} />
+                  )}
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button type="submit" disabled={savingCourse} className="rounded-xl">{savingCourse ? "Guardando..." : "Crear Curso"}</Button>
+                <Button type="submit" disabled={savingCourse || uploadingCover} className="rounded-xl">{savingCourse ? "Guardando..." : "Crear Curso"}</Button>
                 <Button type="button" variant="outline" onClick={() => setShowCourseForm(false)} className="rounded-xl">Cancelar</Button>
               </div>
             </form>
@@ -351,6 +395,7 @@ export default function AdminCursos() {
           ) : (
             courses.map(course => {
               const cLessons = courseLessons(course.id);
+              const cResources = courseResources(course.id);
               const isExpanded = expandedCourse === course.id;
               return (
                 <div key={course.id} className="organic-card overflow-hidden">
@@ -366,7 +411,7 @@ export default function AdminCursos() {
                       )}
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-foreground truncate">{course.title}</h3>
-                        <p className="text-xs text-muted-foreground">{cLessons.length} lecciones · {course.category}</p>
+                        <p className="text-xs text-muted-foreground">{cLessons.length} lecciones · {cResources.length} recursos · {course.category}</p>
                       </div>
                     </button>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${course.is_published ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
@@ -382,69 +427,150 @@ export default function AdminCursos() {
                   </div>
 
                   {isExpanded && (
-                    <div className="border-t border-border p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-heading font-bold text-sm text-foreground flex items-center gap-1">
-                          <Play className="h-4 w-4" /> Lecciones ({cLessons.length})
-                        </h4>
-                        <Button size="sm" variant="outline" className="rounded-xl gap-1 text-xs"
-                          onClick={() => setLessonCourseId(lessonCourseId === course.id ? null : course.id)}>
-                          <Plus className="h-3 w-3" /> Agregar Lección
-                        </Button>
-                      </div>
+                    <div className="border-t border-border p-4 space-y-5">
+                      {/* Lessons */}
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-heading font-bold text-sm text-foreground flex items-center gap-1">
+                            <Play className="h-4 w-4" /> Lecciones ({cLessons.length})
+                          </h4>
+                          <Button size="sm" variant="outline" className="rounded-xl gap-1 text-xs"
+                            onClick={() => setLessonCourseId(lessonCourseId === course.id ? null : course.id)}>
+                            <Plus className="h-3 w-3" /> Agregar Lección
+                          </Button>
+                        </div>
 
-                      {lessonCourseId === course.id && (
-                        <form onSubmit={handleCreateLesson} className="bg-muted/30 rounded-xl p-3 space-y-2">
-                          <Input placeholder="Título de la lección *" value={lessonForm.title}
-                            onChange={e => setLessonForm({ ...lessonForm, title: e.target.value })} required />
-                          <Textarea placeholder="Descripción" value={lessonForm.description}
-                            onChange={e => setLessonForm({ ...lessonForm, description: e.target.value })} rows={2} />
-                          <div className="grid grid-cols-2 gap-2">
-                            <Input placeholder="URL del video" value={lessonForm.video_url}
-                              onChange={e => setLessonForm({ ...lessonForm, video_url: e.target.value })} />
+                        {lessonCourseId === course.id && (
+                          <form onSubmit={handleCreateLesson} className="bg-muted/30 rounded-xl p-3 mt-2 space-y-2">
+                            <Input placeholder="Título de la lección *" value={lessonForm.title}
+                              onChange={e => setLessonForm({ ...lessonForm, title: e.target.value })} required />
+                            <Textarea placeholder="Descripción" value={lessonForm.description}
+                              onChange={e => setLessonForm({ ...lessonForm, description: e.target.value })} rows={2} />
+                            
+                            <div className="space-y-2">
+                              <Label className="text-xs font-medium">Video de la lección</Label>
+                              {lessonForm.video_url ? (
+                                <div className="flex items-center gap-2 bg-primary/5 rounded-lg p-2">
+                                  <Video className="h-4 w-4 text-primary shrink-0" />
+                                  <span className="text-xs text-foreground truncate flex-1">{lessonForm.video_url.split("/").pop()}</span>
+                                  <Button type="button" variant="ghost" size="sm" className="h-6 text-xs"
+                                    onClick={() => setLessonForm({ ...lessonForm, video_url: "" })}>Quitar</Button>
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-2 gap-2">
+                                  <FileUploadButton label="Subir video" icon={Upload} accept="video/*"
+                                    uploading={uploadingVideo} setUploading={setUploadingVideo}
+                                    onUploaded={url => setLessonForm({ ...lessonForm, video_url: url })} />
+                                  <Input placeholder="o pegar URL (YouTube, Vimeo)" value={lessonForm.video_url}
+                                    onChange={e => setLessonForm({ ...lessonForm, video_url: e.target.value })} className="text-xs" />
+                                </div>
+                              )}
+                            </div>
+
                             <Input placeholder="Duración (ej: 15:30)" value={lessonForm.duration}
                               onChange={e => setLessonForm({ ...lessonForm, duration: e.target.value })} />
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <label className="flex items-center gap-2 text-sm">
-                              <input type="checkbox" checked={lessonForm.is_free}
-                                onChange={e => setLessonForm({ ...lessonForm, is_free: e.target.checked })}
-                                className="rounded" />
-                              Lección gratuita (visible sin membresía)
-                            </label>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button type="submit" size="sm" disabled={savingLesson} className="rounded-xl">
-                              {savingLesson ? "..." : "Agregar"}
-                            </Button>
-                            <Button type="button" size="sm" variant="ghost" onClick={() => setLessonCourseId(null)} className="rounded-xl">Cancelar</Button>
-                          </div>
-                        </form>
-                      )}
-
-                      {cLessons.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">Sin lecciones. Agrega la primera.</p>
-                      ) : (
-                        <div className="space-y-1">
-                          {cLessons.map((lesson, idx) => (
-                            <div key={lesson.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/20 group">
-                              <Grip className="h-4 w-4 text-muted-foreground/50" />
-                              <span className="text-xs text-muted-foreground w-6">{idx + 1}.</span>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm text-foreground truncate">{lesson.title}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {lesson.duration || "—"} {lesson.is_free && " · 🆓 Gratuita"}
-                                </p>
-                              </div>
-                              {lesson.video_url && <Video className="h-3 w-3 text-primary" />}
-                              <Button size="sm" variant="ghost" className="opacity-0 group-hover:opacity-100 h-7 w-7 p-0"
-                                onClick={() => deleteLesson(lesson.id)}>
-                                <Trash2 className="h-3 w-3 text-destructive" />
-                              </Button>
+                            <div className="flex items-center gap-4">
+                              <label className="flex items-center gap-2 text-sm">
+                                <input type="checkbox" checked={lessonForm.is_free}
+                                  onChange={e => setLessonForm({ ...lessonForm, is_free: e.target.checked })}
+                                  className="rounded" />
+                                Lección gratuita (visible sin membresía)
+                              </label>
                             </div>
-                          ))}
+                            <div className="flex gap-2">
+                              <Button type="submit" size="sm" disabled={savingLesson || uploadingVideo} className="rounded-xl">
+                                {savingLesson ? "..." : "Agregar"}
+                              </Button>
+                              <Button type="button" size="sm" variant="ghost" onClick={() => setLessonCourseId(null)} className="rounded-xl">Cancelar</Button>
+                            </div>
+                          </form>
+                        )}
+
+                        {cLessons.length === 0 ? (
+                          <p className="text-xs text-muted-foreground mt-2">Sin lecciones. Agrega la primera.</p>
+                        ) : (
+                          <div className="space-y-1 mt-2">
+                            {cLessons.map((lesson, idx) => (
+                              <div key={lesson.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/20 group">
+                                <Grip className="h-4 w-4 text-muted-foreground/50" />
+                                <span className="text-xs text-muted-foreground w-6">{idx + 1}.</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm text-foreground truncate">{lesson.title}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {lesson.duration || "—"} {lesson.is_free && " · 🆓 Gratuita"}
+                                  </p>
+                                </div>
+                                {lesson.video_url && <Video className="h-3 w-3 text-primary" />}
+                                <Button size="sm" variant="ghost" className="opacity-0 group-hover:opacity-100 h-7 w-7 p-0"
+                                  onClick={() => deleteLesson(lesson.id)}>
+                                  <Trash2 className="h-3 w-3 text-destructive" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Resources / Digital Products */}
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-heading font-bold text-sm text-foreground flex items-center gap-1">
+                            <File className="h-4 w-4" /> Recursos descargables ({cResources.length})
+                          </h4>
+                          <Button size="sm" variant="outline" className="rounded-xl gap-1 text-xs"
+                            onClick={() => setResourceCourseId(resourceCourseId === course.id ? null : course.id)}>
+                            <Plus className="h-3 w-3" /> Agregar Recurso
+                          </Button>
                         </div>
-                      )}
+
+                        {resourceCourseId === course.id && (
+                          <form onSubmit={handleCreateResource} className="bg-muted/30 rounded-xl p-3 mt-2 space-y-2">
+                            <Input placeholder="Nombre del recurso *" value={resourceForm.title}
+                              onChange={e => setResourceForm({ ...resourceForm, title: e.target.value })} required />
+                            {resourceForm.file_url ? (
+                              <div className="flex items-center gap-2 bg-primary/5 rounded-lg p-2">
+                                <File className="h-4 w-4 text-primary shrink-0" />
+                                <span className="text-xs text-foreground truncate flex-1">{resourceForm.file_url.split("/").pop()}</span>
+                                <Button type="button" variant="ghost" size="sm" className="h-6 text-xs"
+                                  onClick={() => setResourceForm({ ...resourceForm, file_url: "" })}>Quitar</Button>
+                              </div>
+                            ) : (
+                              <FileUploadButton label="Subir archivo (PDF, ebook, guía...)" icon={Upload}
+                                accept=".pdf,.epub,.doc,.docx,.xlsx,.pptx,.zip,.mp3,.mp4"
+                                uploading={uploadingResource} setUploading={setUploadingResource}
+                                onUploaded={url => setResourceForm({ ...resourceForm, file_url: url })} />
+                            )}
+                            <div className="flex gap-2">
+                              <Button type="submit" size="sm" disabled={savingResource || uploadingResource || !resourceForm.file_url} className="rounded-xl">
+                                {savingResource ? "..." : "Agregar"}
+                              </Button>
+                              <Button type="button" size="sm" variant="ghost" onClick={() => setResourceCourseId(null)} className="rounded-xl">Cancelar</Button>
+                            </div>
+                          </form>
+                        )}
+
+                        {cResources.length === 0 ? (
+                          <p className="text-xs text-muted-foreground mt-2">Sin recursos. Agrega PDFs, ebooks u otros archivos.</p>
+                        ) : (
+                          <div className="space-y-1 mt-2">
+                            {cResources.map(res => (
+                              <div key={res.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/20 group">
+                                <File className="h-4 w-4 text-primary" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm text-foreground truncate">{res.title}</p>
+                                  <p className="text-xs text-muted-foreground uppercase">{res.file_type}</p>
+                                </div>
+                                <a href={res.file_url} target="_blank" rel="noopener noreferrer"
+                                  className="text-xs text-primary hover:underline">Ver</a>
+                                <Button size="sm" variant="ghost" className="opacity-0 group-hover:opacity-100 h-7 w-7 p-0"
+                                  onClick={() => deleteResource(res.id)}>
+                                  <Trash2 className="h-3 w-3 text-destructive" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
