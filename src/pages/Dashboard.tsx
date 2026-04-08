@@ -14,19 +14,18 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const loadData = useCallback(async () => {
     if (!user) return;
-    async function load() {
-      const [sRes, tRes] = await Promise.all([
-        supabase.from("students").select("id, full_name, age").order("full_name"),
-        supabase.from("student_tasks").select("id, student_id, title, due_date, status").order("due_date"),
-      ]);
-      setStudents(sRes.data || []);
-      setTasks(tRes.data || []);
-      setLoading(false);
-    }
-    load();
+    const [sRes, tRes] = await Promise.all([
+      supabase.from("students").select("id, full_name, age").order("full_name"),
+      supabase.from("student_tasks").select("id, student_id, title, description, due_date, status, created_by").order("due_date"),
+    ]);
+    setStudents(sRes.data || []);
+    setTasks(tRes.data || []);
+    setLoading(false);
   }, [user]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const pendingTasks = tasks.filter(t => t.status === "pending");
   const completedTasks = tasks.filter(t => t.status === "completed");
