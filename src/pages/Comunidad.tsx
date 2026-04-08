@@ -21,37 +21,11 @@ const sections: CommunitySection[] = [
   { id: "educadores", label: "Educadores", icon: Shield, description: "Comunidad de docentes y facilitadores", emoji: "📚" },
 ];
 
-const samplePosts: Record<string, { id: number; avatar: string; name: string; content: string; likes: number; replies: number; time: string }[]> = {
-  preescolar: [
-    { id: 1, avatar: "🌸", name: "María G.", content: "¿Qué actividades sensoriales recomiendan para niños de 4 años? Estamos empezando con la mesa de estaciones 🍂", likes: 8, replies: 5, time: "Hace 2h" },
-    { id: 2, avatar: "🦋", name: "Ana L.", content: "Hoy hicimos pan casero con mi pequeña. ¡Le encantó amasar! La mejor actividad Waldorf para preescolar 🍞", likes: 15, replies: 3, time: "Hace 5h" },
-  ],
-  "primaria-baja": [
-    { id: 3, avatar: "🌻", name: "Laura P.", content: "¿Cómo manejan la lectoescritura en primer grado con enfoque Waldorf? Mi hijo tiene 6 años 📖", likes: 12, replies: 8, time: "Hace 1h" },
-    { id: 4, avatar: "🐝", name: "Carmen R.", content: "Compartimos nuestro cuaderno de época sobre los animales de la granja. ¡Quedó hermoso! 🐄", likes: 20, replies: 6, time: "Hace 3h" },
-  ],
-  "primaria-alta": [
-    { id: 5, avatar: "🦉", name: "Patricia M.", content: "Mi hija de 10 años empezó a estudiar astronomía. ¿Alguien tiene recursos Waldorf para 5° grado? 🌟", likes: 9, replies: 4, time: "Hace 4h" },
-  ],
-  secundaria: [
-    { id: 6, avatar: "🍃", name: "Roberto S.", content: "¿Cómo acompañan a sus adolescentes en la transición? Mi hijo de 13 necesita más autonomía 🌊", likes: 11, replies: 7, time: "Hace 2h" },
-  ],
-  padres: [
-    { id: 7, avatar: "💛", name: "Sofía V.", content: "Necesito consejos para no sentirme sola en el camino del homeschooling. ¿Cómo manejan la presión social? 🤗", likes: 25, replies: 18, time: "Hace 1h" },
-    { id: 8, avatar: "🌺", name: "Diego M.", content: "Como papá homeschooler, a veces me siento fuera de lugar. ¿Hay más papás por aquí? 💪", likes: 30, replies: 12, time: "Hace 3h" },
-  ],
-  educadores: [
-    { id: 9, avatar: "📚", name: "Prof. Elena", content: "Comparto mi planificación trimestral para 2° grado basada en pedagogía Waldorf. ¿Alguien quiere intercambiar? ✨", likes: 18, replies: 10, time: "Hace 2h" },
-    { id: 10, avatar: "🎨", name: "Maestra Lucía", content: "Taller de acuarela húmedo sobre húmedo: tips para trabajar con grupos grandes de niños 🎨", likes: 22, replies: 8, time: "Hace 5h" },
-  ],
-};
-
 export default function Comunidad() {
   const [activeSection, setActiveSection] = useState("preescolar");
   const { hasActiveSubscription, isAdmin } = useAuth();
 
   const currentSection = sections.find(s => s.id === activeSection)!;
-  const posts = samplePosts[activeSection] || [];
 
   if (!hasActiveSubscription && !isAdmin) {
     return (
@@ -118,28 +92,13 @@ export default function Comunidad() {
         </div>
       </div>
 
-      {/* Posts */}
-      <div className="space-y-4">
-        {posts.map((post) => (
-          <div key={post.id} className="organic-card p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <span className="text-3xl">{post.avatar}</span>
-              <div>
-                <p className="font-medium text-foreground">{post.name}</p>
-                <p className="text-xs text-muted-foreground">{post.time}</p>
-              </div>
-            </div>
-            <p className="text-foreground text-sm leading-relaxed">{post.content}</p>
-            <div className="flex items-center gap-4 mt-4 pt-3 border-t">
-              <button className="flex items-center gap-1 text-sm text-muted-foreground hover:text-terracotta transition-colors">
-                <Heart className="h-4 w-4" /> {post.likes}
-              </button>
-              <button className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors">
-                <MessageCircle className="h-4 w-4" /> {post.replies} respuestas
-              </button>
-            </div>
-          </div>
-        ))}
+      {/* Empty state */}
+      <div className="organic-card p-10 text-center">
+        <MessageCircle className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-40" />
+        <h3 className="font-heading font-bold text-foreground mb-1">Aún no hay publicaciones</h3>
+        <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+          Sé el primero en compartir algo en {currentSection.label}. ¡Tu experiencia puede inspirar a otras familias!
+        </p>
       </div>
     </div>
   );
