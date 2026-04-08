@@ -4,8 +4,9 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import TaskManager from "@/components/TaskManager";
+import StudentManager from "@/components/StudentManager";
 
-type Student = { id: string; full_name: string; age: number | null };
+type Student = { id: string; full_name: string; age: number | null; date_of_birth: string | null; languages: string | null; previous_education: string | null; special_needs: string | null };
 type Task = { id: string; student_id: string; title: string; description: string | null; due_date: string | null; status: string; created_by: string | null };
 
 const CLASS_DAYS = ["Lunes", "Miércoles", "Viernes"];
