@@ -819,6 +819,145 @@ export default function AdminCursos() {
             </div>
           )}
         </TabsContent>
+
+        {/* ===== PRODUCTS TAB ===== */}
+        <TabsContent value="products" className="space-y-4">
+          <Button onClick={() => setShowProductForm(!showProductForm)} className="rounded-xl gap-2">
+            <Plus className="h-4 w-4" /> Nuevo Producto
+          </Button>
+
+          {showProductForm && (
+            <form onSubmit={handleCreateProduct} className="organic-card p-6 space-y-4">
+              <h3 className="font-heading font-bold text-foreground">Crear Producto Digital</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Título *</Label>
+                  <Input value={productForm.title} onChange={e => setProductForm({ ...productForm, title: e.target.value })} required />
+                </div>
+                <div>
+                  <Label>Autor</Label>
+                  <Input value={productForm.author} onChange={e => setProductForm({ ...productForm, author: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <Label>Descripción</Label>
+                <Textarea value={productForm.description} onChange={e => setProductForm({ ...productForm, description: e.target.value })} rows={3} />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label>Tipo</Label>
+                  <select value={productForm.product_type} onChange={e => setProductForm({ ...productForm, product_type: e.target.value })}
+                    className="w-full h-10 rounded-xl border border-input bg-background px-3 text-sm">
+                    <option value="libro">Libro</option>
+                    <option value="guia">Guía / Cuadernillo</option>
+                    <option value="recurso">Recurso digital</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>Precio (USD) *</Label>
+                  <Input type="number" step="0.01" min="0" value={productForm.price}
+                    onChange={e => setProductForm({ ...productForm, price: e.target.value })} required placeholder="15" />
+                </div>
+                <div>
+                  <Label>Info adicional</Label>
+                  <Input value={productForm.pages_info} onChange={e => setProductForm({ ...productForm, pages_info: e.target.value })} placeholder="Ej: 120 páginas" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Portada</Label>
+                  {productForm.cover_url ? (
+                    <div className="flex items-center gap-2">
+                      <img src={productForm.cover_url} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setProductForm({ ...productForm, cover_url: "" })} className="text-xs">Quitar</Button>
+                    </div>
+                  ) : (
+                    <FileUploadButton label="Subir imagen" icon={Image} accept="image/*"
+                      uploading={uploadingProductCover} setUploading={setUploadingProductCover}
+                      onUploaded={url => setProductForm({ ...productForm, cover_url: url })} />
+                  )}
+                </div>
+                <div>
+                  <Label>Archivo del producto</Label>
+                  {productForm.file_url ? (
+                    <div className="flex items-center gap-2 bg-primary/5 rounded-lg p-2">
+                      <File className="h-4 w-4 text-primary shrink-0" />
+                      <span className="text-xs text-foreground truncate flex-1">{productForm.file_url.split("/").pop()}</span>
+                      <Button type="button" variant="ghost" size="sm" className="h-6 text-xs"
+                        onClick={() => setProductForm({ ...productForm, file_url: "" })}>Quitar</Button>
+                    </div>
+                  ) : (
+                    <FileUploadButton label="Subir archivo (PDF, ebook...)" icon={Upload}
+                      accept=".pdf,.epub,.doc,.docx,.zip"
+                      uploading={uploadingProductFile} setUploading={setUploadingProductFile}
+                      onUploaded={url => setProductForm({ ...productForm, file_url: url })} />
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" disabled={savingProduct || uploadingProductCover || uploadingProductFile} className="rounded-xl">
+                  {savingProduct ? "Guardando..." : "Crear Producto"}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setShowProductForm(false)} className="rounded-xl">Cancelar</Button>
+              </div>
+            </form>
+          )}
+
+          {loading ? <p className="text-muted-foreground">Cargando...</p> : digitalProducts.length === 0 ? (
+            <div className="organic-card p-8 text-center">
+              <ShoppingBag className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">No hay productos. ¡Crea el primero!</p>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-4">
+              {digitalProducts.map(product => (
+                <div key={product.id} className="organic-card overflow-hidden">
+                  <div className="flex gap-4 p-4">
+                    {product.cover_url ? (
+                      <img src={product.cover_url} alt="" className="w-20 h-28 rounded-xl object-cover shrink-0" />
+                    ) : (
+                      <div className="w-20 h-28 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <BookOpen className="h-8 w-8 text-primary" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          product.product_type === "libro" ? "bg-primary/10 text-primary"
+                          : product.product_type === "guia" ? "bg-terracotta/20 text-terracotta-foreground"
+                          : "bg-sage/20 text-sage-foreground"
+                        }`}>
+                          {product.product_type === "libro" ? "Libro" : product.product_type === "guia" ? "Guía" : "Recurso"}
+                        </span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${product.is_published ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                          {product.is_published ? "Publicado" : "Borrador"}
+                        </span>
+                      </div>
+                      <h3 className="font-medium text-foreground truncate">{product.title}</h3>
+                      <p className="text-xs text-muted-foreground">{product.author}</p>
+                      {product.pages_info && <p className="text-xs text-primary mt-0.5">{product.pages_info}</p>}
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-sm font-bold text-primary flex items-center gap-1">
+                          <DollarSign className="h-3 w-3" /> USD ${product.price}
+                        </span>
+                        {product.file_url && <File className="h-3 w-3 text-muted-foreground" />}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-t border-border p-3 flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => toggleProductPublish(product)} className="rounded-xl gap-1 flex-1">
+                      {product.is_published ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                      {product.is_published ? "Despublicar" : "Publicar"}
+                    </Button>
+                    <Button size="sm" variant="destructive" onClick={() => deleteProduct(product.id)} className="rounded-xl">
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
     </div>
   );
