@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
-import { ShoppingCart, BookOpen, FileText, Loader2 } from "lucide-react";
+import { ShoppingCart, BookOpen, FileText, Loader2, CheckCircle, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 type Product = {
   id: string;
@@ -16,22 +19,75 @@ type Product = {
 };
 
 export default function Ebooks() {
+  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
+  const [purchases, setPurchases] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [buyingId, setBuyingId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    async function load() {
-      const { data } = await supabase
-        .from("digital_products")
-        .select("*")
-        .eq("is_published", true)
-        .order("product_type")
-        .order("created_at", { ascending: false });
-      setProducts((data as Product[]) || []);
-      setLoading(false);
-    }
     load();
+    const status = searchParams.get("status");
+    if (status === "success") {
+      toast.success("¡Compra exitosa! Revisa tu email o descarga desde aquí.");
+      navigate("/ebooks", { replace: true });
+    } else if (status === "failure") {
+      toast.error("El pago no se completó. Intentá de nuevo.");
+      navigate("/ebooks", { replace: true });
+    }
   }, []);
+
+  async function load() {
+    const { data } = await supabase
+      .from("digital_products")
+      .select("*")
+      .eq("is_published", true)
+      .order("product_type")
+      .order("created_at", { ascending: false });
+    setProducts((data as Product[]) || []);
+
+    if (user) {
+      const { data: purchaseData } = await supabase
+        .from("product_purchases")
+        .select("product_id")
+        .eq("user_id", user.id)
+        .eq("status", "approved");
+      setPurchases((purchaseData || []).map((p: any) => p.product_id));
+    }
+    setLoading(false);
+  }
+
+  async function handleBuy(product: Product) {
+    if (!user) {
+      toast.error("Iniciá sesión para comprar");
+      navigate("/auth");
+      return;
+    }
+    setBuyingId(product.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-product-preference", {
+        body: {
+          user_id: user.id,
+          email: user.email,
+          product_id: product.id,
+          product_title: product.title,
+          product_price: product.price,
+        },
+      });
+      if (error) throw error;
+      if (data?.init_point) {
+        window.location.href = data.init_point;
+      } else {
+        throw new Error("No se recibió link de pago");
+      }
+    } catch (err: any) {
+      toast.error("Error al iniciar pago: " + (err.message || "Intenta de nuevo"));
+    } finally {
+      setBuyingId(null);
+    }
+  }
 
   const libros = products.filter(p => p.product_type === "libro");
   const guias = products.filter(p => p.product_type !== "libro");
@@ -66,7 +122,10 @@ export default function Ebooks() {
                 <h2 className="text-lg font-heading font-bold text-foreground">Libros Digitales</h2>
               </div>
               <div className="grid sm:grid-cols-2 gap-5">
-                {libros.map(book => <ProductCard key={book.id} product={book} />)}
+                {libros.map(book => (
+                  <ProductCard key={book.id} product={book} purchased={purchases.includes(book.id)}
+                    buying={buyingId === book.id} onBuy={() => handleBuy(book)} />
+                ))}
               </div>
             </div>
           )}
@@ -78,7 +137,10 @@ export default function Ebooks() {
                 <h2 className="text-lg font-heading font-bold text-foreground">Guías y Cuadernillos</h2>
               </div>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {guias.map(book => <ProductCard key={book.id} product={book} />)}
+                {guias.map(book => (
+                  <ProductCard key={book.id} product={book} purchased={purchases.includes(book.id)}
+                    buying={buyingId === book.id} onBuy={() => handleBuy(book)} />
+                ))}
               </div>
             </div>
           )}
@@ -88,17 +150,16 @@ export default function Ebooks() {
   );
 }
 
-function ProductCard({ product }: { product: Product }) {
+function ProductCard({ product, purchased, buying, onBuy }: {
+  product: Product; purchased: boolean; buying: boolean; onBuy: () => void;
+}) {
   return (
     <div className="organic-card overflow-hidden group">
       <div className="aspect-square bg-secondary overflow-hidden">
         {product.cover_url ? (
-          <img
-            src={product.cover_url}
-            alt={product.title}
+          <img src={product.cover_url} alt={product.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            loading="lazy"
-          />
+            loading="lazy" />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-primary/5">
             <BookOpen className="h-16 w-16 text-primary/30" />
@@ -115,15 +176,28 @@ function ProductCard({ product }: { product: Product }) {
         </span>
         <h3 className="font-heading font-bold text-foreground mt-2 leading-tight">{product.title}</h3>
         <p className="text-xs text-muted-foreground mt-0.5">{product.author}</p>
-        {product.pages_info && (
-          <p className="text-xs text-primary mt-1">{product.pages_info}</p>
-        )}
+        {product.pages_info && <p className="text-xs text-primary mt-1">{product.pages_info}</p>}
         <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{product.description}</p>
         <div className="flex items-center justify-between mt-4">
           <span className="text-lg font-bold text-primary">USD ${product.price}</span>
-          <Button size="sm" className="rounded-xl gap-1">
-            <ShoppingCart className="h-4 w-4" /> Comprar
-          </Button>
+          {purchased ? (
+            product.file_url ? (
+              <a href={product.file_url} target="_blank" rel="noopener noreferrer">
+                <Button size="sm" variant="outline" className="rounded-xl gap-1">
+                  <Download className="h-4 w-4" /> Descargar
+                </Button>
+              </a>
+            ) : (
+              <Button size="sm" variant="outline" className="rounded-xl gap-1" disabled>
+                <CheckCircle className="h-4 w-4" /> Comprado
+              </Button>
+            )
+          ) : (
+            <Button size="sm" className="rounded-xl gap-1" onClick={onBuy} disabled={buying}>
+              {buying ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShoppingCart className="h-4 w-4" />}
+              {buying ? "..." : "Comprar"}
+            </Button>
+          )}
         </div>
       </div>
     </div>
