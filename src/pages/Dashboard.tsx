@@ -141,6 +141,7 @@ export default function Dashboard() {
 
           {/* Task Management */}
           <TaskManager students={students} tasks={tasks} onTasksChanged={loadData} />
+        </>
       )}
     </div>
   );
