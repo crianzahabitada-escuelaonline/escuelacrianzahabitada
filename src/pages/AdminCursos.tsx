@@ -468,10 +468,14 @@ export default function AdminCursos() {
                 <Label>Descripción</Label>
                 <Textarea value={courseForm.description} onChange={e => setCourseForm({ ...courseForm, description: e.target.value })} rows={3} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <Label>Categoría</Label>
                   <Input value={courseForm.category} onChange={e => setCourseForm({ ...courseForm, category: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Precio (USD)</Label>
+                  <Input type="number" step="0.01" value={courseForm.price} onChange={e => setCourseForm({ ...courseForm, price: e.target.value })} />
                 </div>
                 <div>
                   <Label>Imagen de portada</Label>
