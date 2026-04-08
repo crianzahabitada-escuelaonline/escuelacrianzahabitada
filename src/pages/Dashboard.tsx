@@ -4,8 +4,9 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import TaskManager from "@/components/TaskManager";
+import StudentManager from "@/components/StudentManager";
 
-type Student = { id: string; full_name: string; age: number | null };
+type Student = { id: string; full_name: string; age: number | null; date_of_birth: string | null; languages: string | null; previous_education: string | null; special_needs: string | null };
 type Task = { id: string; student_id: string; title: string; description: string | null; due_date: string | null; status: string; created_by: string | null };
 
 const CLASS_DAYS = ["Lunes", "Miércoles", "Viernes"];
@@ -110,7 +111,7 @@ export default function Dashboard() {
   const loadData = useCallback(async () => {
     if (!user) return;
     const [sRes, tRes] = await Promise.all([
-      supabase.from("students").select("id, full_name, age").order("full_name"),
+      supabase.from("students").select("id, full_name, age, date_of_birth, languages, previous_education, special_needs").order("full_name"),
       supabase.from("student_tasks").select("id, student_id, title, description, due_date, status, created_by").order("due_date"),
     ]);
     setStudents(sRes.data || []);
@@ -256,42 +257,9 @@ export default function Dashboard() {
           </div>
 
           <div className="grid lg:grid-cols-5 gap-6">
-            {/* Students list */}
-            <div className="lg:col-span-3 space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-heading font-bold text-foreground">Mis Estudiantes</h2>
-                <Link to="/admin" className="text-sm text-primary hover:underline flex items-center gap-1">
-                  Gestionar <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-              {students.length === 0 ? (
-                <div className="organic-card p-6 text-center text-muted-foreground">
-                  <p>No hay estudiantes registrados aún.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {students.map(student => {
-                    const sTasks = tasks.filter(t => t.student_id === student.id);
-                    const sPending = sTasks.filter(t => t.status === "pending").length;
-                    return (
-                      <div key={student.id} className="organic-card p-4 flex items-center gap-4">
-                        <div className="p-2 rounded-xl bg-sage/20">
-                          <BookOpen className="h-5 w-5 text-sage-foreground" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-foreground truncate">{student.full_name}</h3>
-                          <p className="text-xs text-muted-foreground">
-                            {student.age ? `${student.age} años · ` : ""}{sTasks.length} tareas · {sPending} pendientes
-                          </p>
-                        </div>
-                        <span className="text-sm font-medium text-primary">
-                          {sTasks.length > 0 ? Math.round(((sTasks.length - sPending) / sTasks.length) * 100) : 0}%
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+            {/* Students CRUD */}
+            <div className="lg:col-span-3">
+              <StudentManager students={students} onStudentsChanged={loadData} />
             </div>
 
             {/* Upcoming tasks */}
