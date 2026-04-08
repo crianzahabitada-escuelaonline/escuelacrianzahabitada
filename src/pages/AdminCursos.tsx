@@ -319,6 +319,38 @@ export default function AdminCursos() {
     toast.success("Evento eliminado");
   }
 
+  // ---- Product CRUD ----
+  async function handleCreateProduct(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingProduct(true);
+    const { error } = await supabase.from("digital_products").insert({
+      title: productForm.title, description: productForm.description,
+      author: productForm.author, price: parseFloat(productForm.price) || 0,
+      product_type: productForm.product_type, cover_url: productForm.cover_url,
+      file_url: productForm.file_url, pages_info: productForm.pages_info,
+      is_published: false,
+    });
+    setSavingProduct(false);
+    if (error) { toast.error("Error: " + error.message); return; }
+    toast.success("Producto creado");
+    setProductForm({ title: "", description: "", author: "Paola Patricelli", price: "", product_type: "guia", cover_url: "", file_url: "", pages_info: "" });
+    setShowProductForm(false);
+    loadAll();
+  }
+
+  async function toggleProductPublish(product: DigitalProduct) {
+    await supabase.from("digital_products").update({ is_published: !product.is_published }).eq("id", product.id);
+    loadAll();
+    toast.success(product.is_published ? "Producto despublicado" : "Producto publicado");
+  }
+
+  async function deleteProduct(id: string) {
+    if (!confirm("¿Eliminar este producto?")) return;
+    await supabase.from("digital_products").delete().eq("id", id);
+    loadAll();
+    toast.success("Producto eliminado");
+  }
+
   if (!isAdmin) return <div className="p-8 text-center text-muted-foreground">No tienes acceso.</div>;
 
   const courseLessons = (courseId: string) => lessons.filter(l => l.course_id === courseId);
