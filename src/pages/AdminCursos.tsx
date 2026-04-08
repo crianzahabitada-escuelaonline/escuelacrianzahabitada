@@ -11,7 +11,7 @@ import {
   Plus, Trash2, Eye, EyeOff, Users, BookOpen, CheckCircle, Clock,
   ClipboardList, FileText, ChevronDown, ChevronUp, GraduationCap,
   Calendar, Video, Grip, Play, Upload, Image, File, Loader2,
-  ShoppingBag, DollarSign,
+  ShoppingBag, DollarSign, Pencil,
 } from "lucide-react";
 
 const BUCKET = "course-content";
@@ -19,6 +19,7 @@ const BUCKET = "course-content";
 type Course = {
   id: string; title: string; description: string; cover_url: string;
   content_url: string; category: string; is_published: boolean; created_at: string;
+  price: number;
 };
 type Lesson = {
   id: string; course_id: string; title: string; description: string;
@@ -94,9 +95,21 @@ export default function AdminCursos() {
 
   // Course form
   const [showCourseForm, setShowCourseForm] = useState(false);
-  const [courseForm, setCourseForm] = useState({ title: "", description: "", category: "general", content_url: "", cover_url: "" });
+  const [courseForm, setCourseForm] = useState({ title: "", description: "", category: "general", content_url: "", cover_url: "", price: "10" });
   const [savingCourse, setSavingCourse] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+
+  // Edit course
+  const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
+  const [editCourseForm, setEditCourseForm] = useState({ title: "", description: "", category: "", cover_url: "", price: "10" });
+  const [savingEditCourse, setSavingEditCourse] = useState(false);
+  const [uploadingEditCover, setUploadingEditCover] = useState(false);
+
+  // Edit lesson
+  const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
+  const [editLessonForm, setEditLessonForm] = useState({ title: "", description: "", video_url: "", duration: "", is_free: false });
+  const [savingEditLesson, setSavingEditLesson] = useState(false);
+  const [uploadingEditVideo, setUploadingEditVideo] = useState(false);
 
   // Lesson form
   const [lessonCourseId, setLessonCourseId] = useState<string | null>(null);
@@ -171,12 +184,55 @@ export default function AdminCursos() {
       title: courseForm.title, description: courseForm.description,
       category: courseForm.category, content_url: courseForm.content_url,
       cover_url: courseForm.cover_url, is_published: false,
-    });
+      price: parseFloat(courseForm.price) || 10,
+    } as any);
     setSavingCourse(false);
     if (error) { toast.error("Error: " + error.message); return; }
     toast.success("Curso creado");
-    setCourseForm({ title: "", description: "", category: "general", content_url: "", cover_url: "" });
+    setCourseForm({ title: "", description: "", category: "general", content_url: "", cover_url: "", price: "10" });
     setShowCourseForm(false);
+    loadAll();
+  }
+
+  function startEditCourse(course: Course) {
+    setEditingCourseId(course.id);
+    setEditCourseForm({ title: course.title, description: course.description || "", category: course.category || "", cover_url: course.cover_url || "", price: String(course.price ?? 10) });
+  }
+
+  async function handleSaveEditCourse(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingCourseId) return;
+    setSavingEditCourse(true);
+    const { error } = await supabase.from("courses").update({
+      title: editCourseForm.title, description: editCourseForm.description,
+      category: editCourseForm.category, cover_url: editCourseForm.cover_url,
+      price: parseFloat(editCourseForm.price) || 10,
+    } as any).eq("id", editingCourseId);
+    setSavingEditCourse(false);
+    if (error) { toast.error("Error: " + error.message); return; }
+    toast.success("Curso actualizado");
+    setEditingCourseId(null);
+    loadAll();
+  }
+
+  function startEditLesson(lesson: Lesson) {
+    setEditingLessonId(lesson.id);
+    setEditLessonForm({ title: lesson.title, description: lesson.description || "", video_url: lesson.video_url || "", duration: lesson.duration || "", is_free: lesson.is_free });
+  }
+
+  async function handleSaveEditLesson(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingLessonId) return;
+    setSavingEditLesson(true);
+    const { error } = await supabase.from("course_lessons").update({
+      title: editLessonForm.title, description: editLessonForm.description,
+      video_url: editLessonForm.video_url, duration: editLessonForm.duration,
+      is_free: editLessonForm.is_free,
+    }).eq("id", editingLessonId);
+    setSavingEditLesson(false);
+    if (error) { toast.error("Error: " + error.message); return; }
+    toast.success("Lección actualizada");
+    setEditingLessonId(null);
     loadAll();
   }
 
@@ -412,10 +468,14 @@ export default function AdminCursos() {
                 <Label>Descripción</Label>
                 <Textarea value={courseForm.description} onChange={e => setCourseForm({ ...courseForm, description: e.target.value })} rows={3} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <Label>Categoría</Label>
                   <Input value={courseForm.category} onChange={e => setCourseForm({ ...courseForm, category: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Precio (USD)</Label>
+                  <Input type="number" step="0.01" value={courseForm.price} onChange={e => setCourseForm({ ...courseForm, price: e.target.value })} />
                 </div>
                 <div>
                   <Label>Imagen de portada</Label>
@@ -462,12 +522,15 @@ export default function AdminCursos() {
                       )}
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-foreground truncate">{course.title}</h3>
-                        <p className="text-xs text-muted-foreground">{cLessons.length} lecciones · {cResources.length} recursos · {course.category}</p>
+                        <p className="text-xs text-muted-foreground">{cLessons.length} lecciones · {cResources.length} recursos · {course.category} · ${course.price ?? 10} USD</p>
                       </div>
                     </button>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${course.is_published ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
                       {course.is_published ? "Publicado" : "Borrador"}
                     </span>
+                    <Button size="sm" variant="outline" onClick={() => startEditCourse(course)} className="rounded-xl gap-1">
+                      <Pencil className="h-3 w-3" />
+                    </Button>
                     <Button size="sm" variant="outline" onClick={() => togglePublish(course)} className="rounded-xl gap-1">
                       {course.is_published ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                     </Button>
@@ -479,6 +542,50 @@ export default function AdminCursos() {
 
                   {isExpanded && (
                     <div className="border-t border-border p-4 space-y-5">
+                      {/* Edit Course Form */}
+                      {editingCourseId === course.id && (
+                        <form onSubmit={handleSaveEditCourse} className="bg-muted/30 rounded-xl p-4 space-y-3">
+                          <h4 className="font-heading font-bold text-sm text-foreground flex items-center gap-1">
+                            <Pencil className="h-4 w-4" /> Editar Curso
+                          </h4>
+                          <div>
+                            <Label className="text-xs">Título</Label>
+                            <Input value={editCourseForm.title} onChange={e => setEditCourseForm({ ...editCourseForm, title: e.target.value })} required />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Descripción</Label>
+                            <Textarea value={editCourseForm.description} onChange={e => setEditCourseForm({ ...editCourseForm, description: e.target.value })} rows={2} />
+                          </div>
+                          <div className="grid grid-cols-3 gap-3">
+                            <div>
+                              <Label className="text-xs">Categoría</Label>
+                              <Input value={editCourseForm.category} onChange={e => setEditCourseForm({ ...editCourseForm, category: e.target.value })} />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Precio (USD)</Label>
+                              <Input type="number" step="0.01" value={editCourseForm.price} onChange={e => setEditCourseForm({ ...editCourseForm, price: e.target.value })} />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Portada</Label>
+                              {editCourseForm.cover_url ? (
+                                <div className="flex items-center gap-2">
+                                  <img src={editCourseForm.cover_url} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                                  <Button type="button" variant="ghost" size="sm" className="text-xs h-7" onClick={() => setEditCourseForm({ ...editCourseForm, cover_url: "" })}>Quitar</Button>
+                                </div>
+                              ) : (
+                                <FileUploadButton label="Subir" icon={Image} accept="image/*"
+                                  uploading={uploadingEditCover} setUploading={setUploadingEditCover}
+                                  onUploaded={url => setEditCourseForm({ ...editCourseForm, cover_url: url })} />
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button type="submit" size="sm" disabled={savingEditCourse} className="rounded-xl">{savingEditCourse ? "Guardando..." : "Guardar Cambios"}</Button>
+                            <Button type="button" size="sm" variant="ghost" onClick={() => setEditingCourseId(null)} className="rounded-xl">Cancelar</Button>
+                          </div>
+                        </form>
+                      )}
+
                       {/* Lessons */}
                       <div>
                         <div className="flex items-center justify-between">
@@ -542,20 +649,67 @@ export default function AdminCursos() {
                         ) : (
                           <div className="space-y-1 mt-2">
                             {cLessons.map((lesson, idx) => (
-                              <div key={lesson.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/20 group">
-                                <Grip className="h-4 w-4 text-muted-foreground/50" />
-                                <span className="text-xs text-muted-foreground w-6">{idx + 1}.</span>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm text-foreground truncate">{lesson.title}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {lesson.duration || "—"} {lesson.is_free && " · 🆓 Gratuita"}
-                                  </p>
+                              <div key={lesson.id}>
+                                <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/20 group">
+                                  <Grip className="h-4 w-4 text-muted-foreground/50" />
+                                  <span className="text-xs text-muted-foreground w-6">{idx + 1}.</span>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm text-foreground truncate">{lesson.title}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {lesson.duration || "—"} {lesson.is_free && " · 🆓 Gratuita"}
+                                    </p>
+                                  </div>
+                                  {lesson.video_url && <Video className="h-3 w-3 text-primary" />}
+                                  <Button size="sm" variant="ghost" className="opacity-0 group-hover:opacity-100 h-7 w-7 p-0"
+                                    onClick={() => startEditLesson(lesson)}>
+                                    <Pencil className="h-3 w-3 text-muted-foreground" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" className="opacity-0 group-hover:opacity-100 h-7 w-7 p-0"
+                                    onClick={() => deleteLesson(lesson.id)}>
+                                    <Trash2 className="h-3 w-3 text-destructive" />
+                                  </Button>
                                 </div>
-                                {lesson.video_url && <Video className="h-3 w-3 text-primary" />}
-                                <Button size="sm" variant="ghost" className="opacity-0 group-hover:opacity-100 h-7 w-7 p-0"
-                                  onClick={() => deleteLesson(lesson.id)}>
-                                  <Trash2 className="h-3 w-3 text-destructive" />
-                                </Button>
+                                {editingLessonId === lesson.id && (
+                                  <form onSubmit={handleSaveEditLesson} className="bg-muted/30 rounded-xl p-3 ml-8 mt-1 mb-2 space-y-2">
+                                    <Input placeholder="Título *" value={editLessonForm.title}
+                                      onChange={e => setEditLessonForm({ ...editLessonForm, title: e.target.value })} required />
+                                    <Textarea placeholder="Descripción" value={editLessonForm.description}
+                                      onChange={e => setEditLessonForm({ ...editLessonForm, description: e.target.value })} rows={2} />
+                                    <div className="space-y-2">
+                                      <Label className="text-xs font-medium">Video</Label>
+                                      {editLessonForm.video_url ? (
+                                        <div className="flex items-center gap-2 bg-primary/5 rounded-lg p-2">
+                                          <Video className="h-4 w-4 text-primary shrink-0" />
+                                          <span className="text-xs text-foreground truncate flex-1">{editLessonForm.video_url.split("/").pop()}</span>
+                                          <Button type="button" variant="ghost" size="sm" className="h-6 text-xs"
+                                            onClick={() => setEditLessonForm({ ...editLessonForm, video_url: "" })}>Quitar</Button>
+                                        </div>
+                                      ) : (
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <FileUploadButton label="Subir video" icon={Upload} accept="video/*"
+                                            uploading={uploadingEditVideo} setUploading={setUploadingEditVideo}
+                                            onUploaded={url => setEditLessonForm({ ...editLessonForm, video_url: url })} />
+                                          <Input placeholder="o pegar URL" value={editLessonForm.video_url}
+                                            onChange={e => setEditLessonForm({ ...editLessonForm, video_url: e.target.value })} className="text-xs" />
+                                        </div>
+                                      )}
+                                    </div>
+                                    <Input placeholder="Duración (ej: 15:30)" value={editLessonForm.duration}
+                                      onChange={e => setEditLessonForm({ ...editLessonForm, duration: e.target.value })} />
+                                    <label className="flex items-center gap-2 text-sm">
+                                      <input type="checkbox" checked={editLessonForm.is_free}
+                                        onChange={e => setEditLessonForm({ ...editLessonForm, is_free: e.target.checked })}
+                                        className="rounded" />
+                                      Lección gratuita
+                                    </label>
+                                    <div className="flex gap-2">
+                                      <Button type="submit" size="sm" disabled={savingEditLesson} className="rounded-xl">
+                                        {savingEditLesson ? "..." : "Guardar"}
+                                      </Button>
+                                      <Button type="button" size="sm" variant="ghost" onClick={() => setEditingLessonId(null)} className="rounded-xl">Cancelar</Button>
+                                    </div>
+                                  </form>
+                                )}
                               </div>
                             ))}
                           </div>
