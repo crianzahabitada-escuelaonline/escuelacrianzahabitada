@@ -88,6 +88,7 @@ export default function AdminCursos() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
+  const [digitalProducts, setDigitalProducts] = useState<DigitalProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [subCount, setSubCount] = useState(0);
 
@@ -124,6 +125,13 @@ export default function AdminCursos() {
   const [eventForm, setEventForm] = useState({ title: "", description: "", event_type: "webinar", event_date: "", event_time: "18:00", is_public: true, meeting_url: "" });
   const [savingEvent, setSavingEvent] = useState(false);
 
+  // Product form
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [productForm, setProductForm] = useState({ title: "", description: "", author: "Paola Patricelli", price: "", product_type: "guia", cover_url: "", file_url: "", pages_info: "" });
+  const [savingProduct, setSavingProduct] = useState(false);
+  const [uploadingProductCover, setUploadingProductCover] = useState(false);
+  const [uploadingProductFile, setUploadingProductFile] = useState(false);
+
   // Expanded
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
   const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
@@ -132,7 +140,7 @@ export default function AdminCursos() {
 
   async function loadAll() {
     setLoading(true);
-    const [coursesRes, lessonsRes, studentsRes, tasksRes, notesRes, eventsRes, subRes, resourcesRes] = await Promise.all([
+    const [coursesRes, lessonsRes, studentsRes, tasksRes, notesRes, eventsRes, subRes, resourcesRes, productsRes] = await Promise.all([
       supabase.from("courses").select("*").order("created_at", { ascending: false }),
       supabase.from("course_lessons").select("*").order("order_num"),
       supabase.from("students").select("*").order("full_name"),
@@ -141,6 +149,7 @@ export default function AdminCursos() {
       supabase.from("calendar_events").select("*").order("event_date"),
       supabase.from("subscriptions").select("*", { count: "exact", head: true }).eq("status", "active"),
       supabase.from("course_resources").select("*").order("created_at", { ascending: false }),
+      supabase.from("digital_products").select("*").order("created_at", { ascending: false }),
     ]);
     setCourses((coursesRes.data as Course[]) || []);
     setLessons((lessonsRes.data as Lesson[]) || []);
@@ -150,6 +159,7 @@ export default function AdminCursos() {
     setEvents((eventsRes.data as CalendarEvent[]) || []);
     setSubCount(subRes.count || 0);
     setResources((resourcesRes.data as Resource[]) || []);
+    setDigitalProducts((productsRes.data as DigitalProduct[]) || []);
     setLoading(false);
   }
 
