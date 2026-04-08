@@ -233,6 +233,9 @@ export default function Dashboard() {
         <p className="text-muted-foreground">Cargando...</p>
       ) : (
         <>
+          {/* Deadline reminders */}
+          <DeadlineBanner tasks={tasks} studentName={studentName} />
+
           {/* Stats */}
           <div className="grid md:grid-cols-3 gap-6">
             {[
