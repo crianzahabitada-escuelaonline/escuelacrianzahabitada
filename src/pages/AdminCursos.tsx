@@ -184,12 +184,55 @@ export default function AdminCursos() {
       title: courseForm.title, description: courseForm.description,
       category: courseForm.category, content_url: courseForm.content_url,
       cover_url: courseForm.cover_url, is_published: false,
-    });
+      price: parseFloat(courseForm.price) || 10,
+    } as any);
     setSavingCourse(false);
     if (error) { toast.error("Error: " + error.message); return; }
     toast.success("Curso creado");
-    setCourseForm({ title: "", description: "", category: "general", content_url: "", cover_url: "" });
+    setCourseForm({ title: "", description: "", category: "general", content_url: "", cover_url: "", price: "10" });
     setShowCourseForm(false);
+    loadAll();
+  }
+
+  function startEditCourse(course: Course) {
+    setEditingCourseId(course.id);
+    setEditCourseForm({ title: course.title, description: course.description || "", category: course.category || "", cover_url: course.cover_url || "", price: String(course.price ?? 10) });
+  }
+
+  async function handleSaveEditCourse(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingCourseId) return;
+    setSavingEditCourse(true);
+    const { error } = await supabase.from("courses").update({
+      title: editCourseForm.title, description: editCourseForm.description,
+      category: editCourseForm.category, cover_url: editCourseForm.cover_url,
+      price: parseFloat(editCourseForm.price) || 10,
+    } as any).eq("id", editingCourseId);
+    setSavingEditCourse(false);
+    if (error) { toast.error("Error: " + error.message); return; }
+    toast.success("Curso actualizado");
+    setEditingCourseId(null);
+    loadAll();
+  }
+
+  function startEditLesson(lesson: Lesson) {
+    setEditingLessonId(lesson.id);
+    setEditLessonForm({ title: lesson.title, description: lesson.description || "", video_url: lesson.video_url || "", duration: lesson.duration || "", is_free: lesson.is_free });
+  }
+
+  async function handleSaveEditLesson(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingLessonId) return;
+    setSavingEditLesson(true);
+    const { error } = await supabase.from("course_lessons").update({
+      title: editLessonForm.title, description: editLessonForm.description,
+      video_url: editLessonForm.video_url, duration: editLessonForm.duration,
+      is_free: editLessonForm.is_free,
+    }).eq("id", editingLessonId);
+    setSavingEditLesson(false);
+    if (error) { toast.error("Error: " + error.message); return; }
+    toast.success("Lección actualizada");
+    setEditingLessonId(null);
     loadAll();
   }
 
