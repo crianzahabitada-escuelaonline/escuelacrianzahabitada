@@ -138,7 +138,9 @@ export default function Dashboard() {
               )}
             </div>
           </div>
-        </>
+
+          {/* Task Management */}
+          <TaskManager students={students} tasks={tasks} onTasksChanged={loadData} />
       )}
     </div>
   );
