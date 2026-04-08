@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
-import { BookOpen, Calendar, ClipboardList, ArrowRight, CheckCircle, Clock, Lock } from "lucide-react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { BookOpen, Calendar, ClipboardList, ArrowRight, CheckCircle, Clock, Lock, AlertTriangle, Bell } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,97 @@ type Student = { id: string; full_name: string; age: number | null };
 type Task = { id: string; student_id: string; title: string; description: string | null; due_date: string | null; status: string; created_by: string | null };
 
 const CLASS_DAYS = ["Lunes", "Miércoles", "Viernes"];
+
+function getDeadlineInfo(dueDate: string) {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const due = new Date(dueDate + "T00:00:00");
+  const diffMs = due.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  return diffDays;
+}
+
+function DeadlineBanner({ tasks, studentName }: { tasks: Task[]; studentName: (id: string) => string }) {
+  const { overdue, today, tomorrow, thisWeek } = useMemo(() => {
+    const overdue: Task[] = [];
+    const today: Task[] = [];
+    const tomorrow: Task[] = [];
+    const thisWeek: Task[] = [];
+    for (const t of tasks) {
+      if (t.status !== "pending" || !t.due_date) continue;
+      const diff = getDeadlineInfo(t.due_date);
+      if (diff < 0) overdue.push(t);
+      else if (diff === 0) today.push(t);
+      else if (diff === 1) tomorrow.push(t);
+      else if (diff <= 7) thisWeek.push(t);
+    }
+    return { overdue, today, tomorrow, thisWeek };
+  }, [tasks]);
+
+  if (overdue.length === 0 && today.length === 0 && tomorrow.length === 0 && thisWeek.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      {overdue.length > 0 && (
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-4 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="font-medium text-destructive text-sm">
+              {overdue.length === 1 ? "1 tarea vencida" : `${overdue.length} tareas vencidas`}
+            </p>
+            <ul className="mt-1 space-y-0.5">
+              {overdue.slice(0, 3).map(t => (
+                <li key={t.id} className="text-xs text-destructive/80">
+                  • {t.title} — {studentName(t.student_id)} (venció {new Date(t.due_date!).toLocaleDateString("es")})
+                </li>
+              ))}
+              {overdue.length > 3 && <li className="text-xs text-destructive/70">y {overdue.length - 3} más…</li>}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {today.length > 0 && (
+        <div className="rounded-2xl border border-terracotta/30 bg-terracotta/10 p-4 flex items-start gap-3">
+          <Bell className="h-5 w-5 text-terracotta-foreground mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="font-medium text-terracotta-foreground text-sm">
+              {today.length === 1 ? "1 tarea vence hoy" : `${today.length} tareas vencen hoy`}
+            </p>
+            <ul className="mt-1 space-y-0.5">
+              {today.map(t => (
+                <li key={t.id} className="text-xs text-foreground/70">• {t.title} — {studentName(t.student_id)}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {(tomorrow.length > 0 || thisWeek.length > 0) && (
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex items-start gap-3">
+          <Clock className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="font-medium text-foreground text-sm">Próximos vencimientos</p>
+            <ul className="mt-1 space-y-0.5">
+              {tomorrow.map(t => (
+                <li key={t.id} className="text-xs text-foreground/70">• {t.title} — {studentName(t.student_id)} (mañana)</li>
+              ))}
+              {thisWeek.slice(0, 3).map(t => {
+                const diff = getDeadlineInfo(t.due_date!);
+                return (
+                  <li key={t.id} className="text-xs text-foreground/70">
+                    • {t.title} — {studentName(t.student_id)} (en {diff} días)
+                  </li>
+                );
+              })}
+              {thisWeek.length > 3 && <li className="text-xs text-muted-foreground">y {thisWeek.length - 3} más esta semana…</li>}
+            </ul>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const { user, isAdmin, hasActiveSubscription } = useAuth();
@@ -56,6 +147,8 @@ export default function Dashboard() {
           <p className="text-muted-foreground">Cargando...</p>
         ) : (
           <>
+            {/* Deadline reminders */}
+            <DeadlineBanner tasks={tasks} studentName={studentName} />
             {/* Stats */}
             <div className="grid md:grid-cols-2 gap-6">
               <div className="organic-card p-5 flex items-center gap-4">
@@ -140,6 +233,9 @@ export default function Dashboard() {
         <p className="text-muted-foreground">Cargando...</p>
       ) : (
         <>
+          {/* Deadline reminders */}
+          <DeadlineBanner tasks={tasks} studentName={studentName} />
+
           {/* Stats */}
           <div className="grid md:grid-cols-3 gap-6">
             {[
