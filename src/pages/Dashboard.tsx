@@ -145,8 +145,12 @@ export default function Dashboard() {
 
         {loading ? (
           <p className="text-muted-foreground">Cargando...</p>
-        ) : (
-          <>
+      ) : (
+        <>
+          {/* Deadline reminders */}
+          <DeadlineBanner tasks={tasks} studentName={studentName} />
+            {/* Deadline reminders */}
+            <DeadlineBanner tasks={tasks} studentName={studentName} />
             {/* Stats */}
             <div className="grid md:grid-cols-2 gap-6">
               <div className="organic-card p-5 flex items-center gap-4">
