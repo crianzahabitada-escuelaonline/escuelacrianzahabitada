@@ -645,20 +645,67 @@ export default function AdminCursos() {
                         ) : (
                           <div className="space-y-1 mt-2">
                             {cLessons.map((lesson, idx) => (
-                              <div key={lesson.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/20 group">
-                                <Grip className="h-4 w-4 text-muted-foreground/50" />
-                                <span className="text-xs text-muted-foreground w-6">{idx + 1}.</span>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm text-foreground truncate">{lesson.title}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {lesson.duration || "—"} {lesson.is_free && " · 🆓 Gratuita"}
-                                  </p>
+                              <div key={lesson.id}>
+                                <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/20 group">
+                                  <Grip className="h-4 w-4 text-muted-foreground/50" />
+                                  <span className="text-xs text-muted-foreground w-6">{idx + 1}.</span>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm text-foreground truncate">{lesson.title}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {lesson.duration || "—"} {lesson.is_free && " · 🆓 Gratuita"}
+                                    </p>
+                                  </div>
+                                  {lesson.video_url && <Video className="h-3 w-3 text-primary" />}
+                                  <Button size="sm" variant="ghost" className="opacity-0 group-hover:opacity-100 h-7 w-7 p-0"
+                                    onClick={() => startEditLesson(lesson)}>
+                                    <Pencil className="h-3 w-3 text-muted-foreground" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" className="opacity-0 group-hover:opacity-100 h-7 w-7 p-0"
+                                    onClick={() => deleteLesson(lesson.id)}>
+                                    <Trash2 className="h-3 w-3 text-destructive" />
+                                  </Button>
                                 </div>
-                                {lesson.video_url && <Video className="h-3 w-3 text-primary" />}
-                                <Button size="sm" variant="ghost" className="opacity-0 group-hover:opacity-100 h-7 w-7 p-0"
-                                  onClick={() => deleteLesson(lesson.id)}>
-                                  <Trash2 className="h-3 w-3 text-destructive" />
-                                </Button>
+                                {editingLessonId === lesson.id && (
+                                  <form onSubmit={handleSaveEditLesson} className="bg-muted/30 rounded-xl p-3 ml-8 mt-1 mb-2 space-y-2">
+                                    <Input placeholder="Título *" value={editLessonForm.title}
+                                      onChange={e => setEditLessonForm({ ...editLessonForm, title: e.target.value })} required />
+                                    <Textarea placeholder="Descripción" value={editLessonForm.description}
+                                      onChange={e => setEditLessonForm({ ...editLessonForm, description: e.target.value })} rows={2} />
+                                    <div className="space-y-2">
+                                      <Label className="text-xs font-medium">Video</Label>
+                                      {editLessonForm.video_url ? (
+                                        <div className="flex items-center gap-2 bg-primary/5 rounded-lg p-2">
+                                          <Video className="h-4 w-4 text-primary shrink-0" />
+                                          <span className="text-xs text-foreground truncate flex-1">{editLessonForm.video_url.split("/").pop()}</span>
+                                          <Button type="button" variant="ghost" size="sm" className="h-6 text-xs"
+                                            onClick={() => setEditLessonForm({ ...editLessonForm, video_url: "" })}>Quitar</Button>
+                                        </div>
+                                      ) : (
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <FileUploadButton label="Subir video" icon={Upload} accept="video/*"
+                                            uploading={uploadingEditVideo} setUploading={setUploadingEditVideo}
+                                            onUploaded={url => setEditLessonForm({ ...editLessonForm, video_url: url })} />
+                                          <Input placeholder="o pegar URL" value={editLessonForm.video_url}
+                                            onChange={e => setEditLessonForm({ ...editLessonForm, video_url: e.target.value })} className="text-xs" />
+                                        </div>
+                                      )}
+                                    </div>
+                                    <Input placeholder="Duración (ej: 15:30)" value={editLessonForm.duration}
+                                      onChange={e => setEditLessonForm({ ...editLessonForm, duration: e.target.value })} />
+                                    <label className="flex items-center gap-2 text-sm">
+                                      <input type="checkbox" checked={editLessonForm.is_free}
+                                        onChange={e => setEditLessonForm({ ...editLessonForm, is_free: e.target.checked })}
+                                        className="rounded" />
+                                      Lección gratuita
+                                    </label>
+                                    <div className="flex gap-2">
+                                      <Button type="submit" size="sm" disabled={savingEditLesson} className="rounded-xl">
+                                        {savingEditLesson ? "..." : "Guardar"}
+                                      </Button>
+                                      <Button type="button" size="sm" variant="ghost" onClick={() => setEditingLessonId(null)} className="rounded-xl">Cancelar</Button>
+                                    </div>
+                                  </form>
+                                )}
                               </div>
                             ))}
                           </div>
