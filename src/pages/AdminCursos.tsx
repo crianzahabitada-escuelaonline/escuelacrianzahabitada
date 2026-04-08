@@ -19,6 +19,7 @@ const BUCKET = "course-content";
 type Course = {
   id: string; title: string; description: string; cover_url: string;
   content_url: string; category: string; is_published: boolean; created_at: string;
+  price: number;
 };
 type Lesson = {
   id: string; course_id: string; title: string; description: string;
