@@ -26,7 +26,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, isAdmin, hasActiveSubscription, signOut } = useAuth();
 
   const navItems = [
-    { to: "/", icon: Home, label: "Inicio" },
+    { to: "/dashboard", icon: Home, label: "Inicio" },
     { to: "/cursos", icon: BookOpen, label: "Cursos" },
     { to: "/ebooks", icon: Library, label: "E-books" },
     { to: "/comunidad", icon: MessageCircle, label: "Comunidad" },

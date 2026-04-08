@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute, AdminRoute } from "@/components/ProtectedRoute";
 import AppLayout from "@/components/AppLayout";
+import Index from "@/pages/Index";
 import Dashboard from "@/pages/Dashboard";
 import Cursos from "@/pages/Cursos";
 import CursoDetalle from "@/pages/CursoDetalle";
@@ -28,15 +29,15 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            {/* Public pages */}
-            <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
+            {/* Protected app pages */}
+            <Route path="/dashboard" element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
             <Route path="/cursos" element={<AppLayout><Cursos /></AppLayout>} />
             <Route path="/cursos/:id" element={<AppLayout><CursoDetalle /></AppLayout>} />
             <Route path="/ebooks" element={<AppLayout><Ebooks /></AppLayout>} />
             <Route path="/comunidad" element={<ProtectedRoute><AppLayout><Comunidad /></AppLayout></ProtectedRoute>} />
             <Route path="/calendario" element={<AppLayout><Calendario /></AppLayout>} />
-            {/* Protected - require login */}
             <Route path="/perfil" element={<ProtectedRoute><AppLayout><Perfil /></AppLayout></ProtectedRoute>} />
             <Route path="/membresia" element={<ProtectedRoute><AppLayout><Membresia /></AppLayout></ProtectedRoute>} />
             <Route path="/admin" element={<AdminRoute><AppLayout><AdminCursos /></AppLayout></AdminRoute>} />

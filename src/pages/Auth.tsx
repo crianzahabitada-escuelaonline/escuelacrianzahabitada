@@ -47,7 +47,7 @@ export default function Auth() {
       toast.error(error.message);
     } else {
       toast.success("¡Bienvenida de vuelta!");
-      navigate("/");
+      navigate("/dashboard");
     }
   };
 
