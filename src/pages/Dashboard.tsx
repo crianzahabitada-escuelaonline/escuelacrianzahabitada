@@ -145,10 +145,8 @@ export default function Dashboard() {
 
         {loading ? (
           <p className="text-muted-foreground">Cargando...</p>
-      ) : (
-        <>
-          {/* Deadline reminders */}
-          <DeadlineBanner tasks={tasks} studentName={studentName} />
+        ) : (
+          <>
             {/* Deadline reminders */}
             <DeadlineBanner tasks={tasks} studentName={studentName} />
             {/* Stats */}
