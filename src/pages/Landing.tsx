@@ -1,29 +1,56 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, BookOpen, Users, Calendar, Star, Heart, Leaf, Sparkles } from "lucide-react";
+import { ArrowRight, BookOpen, Users, Calendar, Star, Heart, Leaf, Sparkles, GraduationCap, Baby, Palette, HeartHandshake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import heroImg from "@/assets/landing-hero.jpg";
 import communityImg from "@/assets/landing-community.jpg";
 
+const pillars = [
+  {
+    icon: Baby,
+    title: "Acompañamiento al Niño",
+    description: "Clases semanales en vivo, tareas guiadas y seguimiento personalizado con maestra Waldorf. Una escuela real, con ritmo y calidez.",
+    color: "primary",
+  },
+  {
+    icon: Heart,
+    title: "Acompañamiento a Padres y Tutores",
+    description: "Formación, encuentros y herramientas para que puedas acompañar la infancia con seguridad, presencia y consciencia.",
+    color: "accent",
+  },
+  {
+    icon: GraduationCap,
+    title: "Espacio para Educadores",
+    description: "Recursos exclusivos, cursos de formación y acompañamiento profesional para educadores que desean integrar la pedagogía Waldorf.",
+    color: "terracotta",
+  },
+  {
+    icon: HeartHandshake,
+    title: "Sesiones Terapéuticas",
+    description: "Espacios de contención y terapia para padres y familias. Acompañamiento emocional en el camino de la crianza consciente.",
+    color: "lavender",
+  },
+];
+
 const features = [
   {
     icon: BookOpen,
-    title: "Cursos en Video",
-    description: "Aprende a tu ritmo con cursos diseñados desde la pedagogía Waldorf para acompañar el desarrollo integral de tus hijos.",
+    title: "Cursos y Clases Semanales",
+    description: "Contenido en video con pedagogía Waldorf: clases para niños, formación para padres y recursos para educadores.",
   },
   {
     icon: Users,
-    title: "Comunidad de Familias",
-    description: "Conecta con otras familias que eligen la crianza consciente. Comparte experiencias y crece en comunidad.",
+    title: "Comunidad Activa",
+    description: "Conectá con familias y educadores que comparten el mismo camino. Foros, grupos y apoyo constante.",
   },
   {
     icon: Calendar,
     title: "Encuentros en Vivo",
-    description: "Webinars, talleres y círculos de mamás donde compartimos herramientas prácticas y nos acompañamos.",
+    description: "Webinars, talleres, clases semanales y círculos de acompañamiento con maestra Waldorf.",
   },
   {
-    icon: Leaf,
-    title: "Recursos Descargables",
-    description: "E-books, guías y cuadernillos pensados para acompañar cada etapa de la infancia con amor y presencia.",
+    icon: Palette,
+    title: "Recursos y E-books",
+    description: "Guías, cuadernillos y materiales descargables para cada etapa del desarrollo infantil.",
   },
 ];
 
@@ -41,6 +68,13 @@ const testimonials = [
     text: "Cada recurso está hecho con tanto cuidado y cariño. Se nota la pedagogía Waldorf en cada detalle.",
   },
 ];
+
+const colorMap: Record<string, { bg: string; text: string; border: string }> = {
+  primary: { bg: "bg-primary/10", text: "text-primary", border: "border-primary/20" },
+  accent: { bg: "bg-accent/10", text: "text-accent", border: "border-accent/20" },
+  terracotta: { bg: "bg-terracotta/10", text: "text-terracotta", border: "border-terracotta/20" },
+  lavender: { bg: "bg-lavender/10", text: "text-lavender", border: "border-lavender/20" },
+};
 
 export default function Landing() {
   return (
@@ -70,18 +104,18 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto px-4 py-16 md:py-24 grid md:grid-cols-2 gap-10 items-center">
           <div className="space-y-6">
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary rounded-full px-4 py-1.5 text-sm font-medium">
-              <Sparkles className="h-4 w-4" /> Pedagogía Waldorf
+              <Sparkles className="h-4 w-4" /> Membresía Anual · Pedagogía Waldorf
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold text-foreground leading-tight">
-              Crianza con <span className="text-primary">presencia</span>, amor y comunidad
+              Tu escuela de <span className="text-primary">acompañamiento</span> Waldorf online
             </h1>
             <p className="text-lg text-muted-foreground max-w-lg">
-              Una escuela online para familias que eligen acompañar la infancia con consciencia, creatividad y respeto por los ritmos naturales.
+              Una membresía anual con maestra Waldorf que acompaña a niños con clases semanales, tareas y seguimiento — y a padres, tutores y educadores con formación, comunidad y contención.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link to="/auth">
                 <Button size="lg" className="rounded-xl gap-2 text-base">
-                  Comenzar ahora <ArrowRight className="h-4 w-4" />
+                  Unirme a la escuela <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
               <Link to="/ebooks">
@@ -112,8 +146,39 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Features */}
+      {/* Membership Pillars */}
       <section className="bg-secondary/50 py-16 md:py-24">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary rounded-full px-4 py-1.5 text-sm font-medium mb-4">
+              <Leaf className="h-4 w-4" /> ¿Qué incluye la membresía?
+            </div>
+            <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground">
+              Cuatro pilares de acompañamiento
+            </h2>
+            <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">
+              Crianza Habitada es mucho más que cursos online: es una escuela viva con acompañamiento real, semanal y personalizado.
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-6">
+            {pillars.map((p) => {
+              const colors = colorMap[p.color] || colorMap.primary;
+              return (
+                <div key={p.title} className={`organic-card p-6 border ${colors.border} hover:shadow-md transition-shadow`}>
+                  <div className={`w-12 h-12 rounded-2xl ${colors.bg} flex items-center justify-center mb-4`}>
+                    <p.icon className={`h-6 w-6 ${colors.text}`} />
+                  </div>
+                  <h3 className="font-heading font-bold text-foreground text-lg mb-2">{p.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{p.description}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="py-16 md:py-24">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground">
@@ -138,7 +203,7 @@ export default function Landing() {
       </section>
 
       {/* About / Community */}
-      <section className="py-16 md:py-24">
+      <section className="bg-secondary/50 py-16 md:py-24">
         <div className="max-w-6xl mx-auto px-4 grid md:grid-cols-2 gap-10 items-center">
           <div className="rounded-3xl overflow-hidden shadow-lg border border-border">
             <img
@@ -158,11 +223,11 @@ export default function Landing() {
               Educadora Waldorf, madre y guía de cientos de familias que buscan una crianza más consciente y conectada. Con más de 10 años de experiencia acompañando el desarrollo infantil.
             </p>
             <p className="text-muted-foreground">
-              En Crianza Habitada encontrarás un espacio seguro donde aprender, compartir y crecer junto a otras familias que eligen el mismo camino.
+              Crianza Habitada nació como una escuela de acompañamiento real: con clases semanales para los niños, formación para los padres, herramientas para educadores y espacios terapéuticos para toda la familia.
             </p>
             <Link to="/auth">
               <Button className="rounded-xl gap-2 mt-2">
-                Únete a la comunidad <ArrowRight className="h-4 w-4" />
+                Únete a la escuela <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
           </div>
@@ -170,7 +235,7 @@ export default function Landing() {
       </section>
 
       {/* Testimonials */}
-      <section className="bg-secondary/50 py-16 md:py-24">
+      <section className="py-16 md:py-24">
         <div className="max-w-6xl mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground text-center mb-10">
             Lo que dicen nuestras familias
@@ -197,15 +262,15 @@ export default function Landing() {
           <div className="organic-card p-8 md:p-12 bg-primary/5 border-primary/20">
             <Leaf className="h-10 w-10 text-primary mx-auto mb-4" />
             <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground mb-4">
-              Comenzá hoy tu camino
+              Tu familia merece este acompañamiento
             </h2>
             <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
-              Accedé a todos los cursos, la comunidad, los encuentros en vivo y recursos exclusivos con tu membresía.
+              Accedé a la escuela completa: clases semanales para niños, formación para padres, espacio para educadores, sesiones terapéuticas, comunidad y todos los recursos.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Link to="/auth">
                 <Button size="lg" className="rounded-xl gap-2 text-base">
-                  Crear cuenta gratis <ArrowRight className="h-4 w-4" />
+                  Comenzar mi membresía <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
               <Link to="/ebooks">
