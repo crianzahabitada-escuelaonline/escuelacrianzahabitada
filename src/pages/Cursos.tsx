@@ -90,21 +90,31 @@ export default function Cursos() {
                 )}
               </div>
               <div className="p-5">
-                <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">
-                  {course.category || "General"}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">
+                    {course.category || "General"}
+                  </span>
+                  {course.price === 0 ? (
+                    <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded-full">
+                      ✨ Gratuito
+                    </span>
+                  ) : (
+                    <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-full">
+                      ${course.price} USD
+                    </span>
+                  )}
+                </div>
                 <h3 className="font-heading font-bold text-foreground mt-2 mb-1 text-lg">{course.title}</h3>
                 <p className="text-sm text-muted-foreground line-clamp-3">{course.description || ""}</p>
-                <div className="flex items-center justify-between mt-3">
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Play className="h-3.5 w-3.5" />{lessonCounts[course.id] || 0} lecciones
-                    </span>
-                  </div>
-                  <span className="text-lg font-heading font-bold text-primary">${course.price ?? 10} USD</span>
+                <div className="flex items-center gap-4 text-xs text-muted-foreground mt-3">
+                  <span className="flex items-center gap-1">
+                    <Play className="h-3.5 w-3.5" />{lessonCounts[course.id] || 0} lecciones
+                  </span>
                 </div>
                 <Link to={`/cursos/${course.id}`}>
-                  <Button className="w-full mt-3 rounded-xl">Ver Curso</Button>
+                  <Button className={`w-full mt-3 rounded-xl ${course.price === 0 ? "bg-green-600 hover:bg-green-700" : ""}`}>
+                    {course.price === 0 ? "Ver Curso Gratis" : "Ver Curso"}
+                  </Button>
                 </Link>
               </div>
             </div>
