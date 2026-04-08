@@ -135,8 +135,8 @@ export default function CursoDetalle() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Video Player */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="rounded-2xl bg-foreground/5 aspect-video flex items-center justify-center overflow-hidden">
-            {currentLesson && !isLessonLocked && currentLesson.video_url ? (
+          <div className="rounded-2xl bg-foreground/5 aspect-video flex items-center justify-center overflow-hidden relative">
+            {currentLesson && canAccessPaid && currentLesson.video_url ? (
               isDirectVideoUrl(currentLesson.video_url) ? (
                 <video
                   src={currentLesson.video_url}
@@ -154,20 +154,24 @@ export default function CursoDetalle() {
                   title={currentLesson.title}
                 />
               )
-            ) : isLessonLocked ? (
-              <div className="text-center p-8">
-                <Lock className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
-                <p className="text-muted-foreground font-medium">Contenido exclusivo</p>
-                <p className="text-sm text-muted-foreground mt-1">Compra este curso o activa tu membresía</p>
-              </div>
             ) : (
-              <div className="text-center">
-                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
-                  <Play className="h-7 w-7 text-primary ml-1" />
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {currentLesson ? currentLesson.title : "Selecciona una lección"}
-                </p>
+              <div className="text-center p-8">
+                {currentLesson ? (
+                  <>
+                    <Lock className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
+                    <p className="text-foreground font-medium">{currentLesson.title}</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {canAccessPaid ? "Sin video disponible" : "Compra este curso o activa tu membresía para reproducir"}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-3">
+                      <Play className="h-7 w-7 text-primary ml-1" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">Selecciona una lección</p>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -177,14 +181,14 @@ export default function CursoDetalle() {
             <p className="text-sm text-muted-foreground mt-1">{course.description}</p>
           </div>
 
-          {currentLesson && currentLesson.description && !isLessonLocked && (
+          {currentLesson && currentLesson.description && canAccessPaid && (
             <div className="organic-card p-5">
               <h3 className="font-heading font-bold text-foreground text-sm mb-2">{currentLesson.title}</h3>
               <p className="text-sm text-muted-foreground">{currentLesson.description}</p>
             </div>
           )}
 
-          {resources.length > 0 && canAccessPaid && (
+          {resources.length > 0 && (
             <div className="organic-card p-5 space-y-3">
               <h3 className="font-heading font-bold text-foreground flex items-center gap-2">
                 📎 Material Descargable
@@ -195,11 +199,17 @@ export default function CursoDetalle() {
                     <p className="text-sm font-medium text-foreground">{r.title}</p>
                     <p className="text-xs text-muted-foreground">{r.file_type?.toUpperCase()}</p>
                   </div>
-                  <a href={r.file_url} target="_blank" rel="noopener noreferrer">
-                    <Button variant="outline" size="sm" className="rounded-xl gap-1">
-                      <ExternalLink className="h-3 w-3" /> Abrir
+                  {canAccessPaid ? (
+                    <a href={r.file_url} target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" size="sm" className="rounded-xl gap-1">
+                        <ExternalLink className="h-3 w-3" /> Abrir
+                      </Button>
+                    </a>
+                  ) : (
+                    <Button variant="outline" size="sm" className="rounded-xl gap-1 opacity-50" disabled>
+                      <Lock className="h-3 w-3" /> Bloqueado
                     </Button>
-                  </a>
+                  )}
                 </div>
               ))}
             </div>
