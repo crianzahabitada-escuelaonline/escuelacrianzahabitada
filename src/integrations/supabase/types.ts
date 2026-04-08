@@ -14,16 +14,233 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      course_resources: {
+        Row: {
+          course_id: string
+          created_at: string
+          file_type: string | null
+          file_url: string
+          id: string
+          title: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          file_type?: string | null
+          file_url: string
+          id?: string
+          title: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_resources_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          category: string | null
+          content_url: string | null
+          cover_url: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_published: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          content_url?: string | null
+          cover_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          content_url?: string | null
+          cover_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          country: string | null
+          created_at: string
+          email: string
+          full_name: string
+          homeschool_experience: string | null
+          id: string
+          motivation: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          homeschool_experience?: string | null
+          id: string
+          motivation?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          homeschool_experience?: string | null
+          id?: string
+          motivation?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      students: {
+        Row: {
+          age: number | null
+          created_at: string
+          date_of_birth: string | null
+          full_name: string
+          id: string
+          languages: string | null
+          previous_education: string | null
+          special_needs: string | null
+          tutor_id: string
+          updated_at: string
+        }
+        Insert: {
+          age?: number | null
+          created_at?: string
+          date_of_birth?: string | null
+          full_name: string
+          id?: string
+          languages?: string | null
+          previous_education?: string | null
+          special_needs?: string | null
+          tutor_id: string
+          updated_at?: string
+        }
+        Update: {
+          age?: number | null
+          created_at?: string
+          date_of_birth?: string | null
+          full_name?: string
+          id?: string
+          languages?: string | null
+          previous_education?: string | null
+          special_needs?: string | null
+          tutor_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          mp_payer_id: string | null
+          mp_subscription_id: string | null
+          plan: string
+          price_usd: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          mp_payer_id?: string | null
+          mp_subscription_id?: string | null
+          plan?: string
+          price_usd?: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          mp_payer_id?: string | null
+          mp_subscription_id?: string | null
+          plan?: string
+          price_usd?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "member"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +367,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "member"],
+    },
   },
 } as const
