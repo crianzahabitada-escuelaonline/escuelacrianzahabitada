@@ -216,6 +216,47 @@ export type Database = {
         }
         Relationships: []
       }
+      product_purchases: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          mp_payment_id: string | null
+          product_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          mp_payment_id?: string | null
+          product_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          mp_payment_id?: string | null
+          product_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_purchases_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "digital_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
