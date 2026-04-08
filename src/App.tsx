@@ -29,12 +29,14 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
-            <Route path="/cursos" element={<ProtectedRoute><AppLayout><Cursos /></AppLayout></ProtectedRoute>} />
-            <Route path="/cursos/:id" element={<ProtectedRoute><AppLayout><CursoDetalle /></AppLayout></ProtectedRoute>} />
-            <Route path="/ebooks" element={<ProtectedRoute><AppLayout><Ebooks /></AppLayout></ProtectedRoute>} />
-            <Route path="/comunidad" element={<ProtectedRoute><AppLayout><Comunidad /></AppLayout></ProtectedRoute>} />
-            <Route path="/calendario" element={<ProtectedRoute><AppLayout><Calendario /></AppLayout></ProtectedRoute>} />
+            {/* Public pages */}
+            <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
+            <Route path="/cursos" element={<AppLayout><Cursos /></AppLayout>} />
+            <Route path="/cursos/:id" element={<AppLayout><CursoDetalle /></AppLayout>} />
+            <Route path="/ebooks" element={<AppLayout><Ebooks /></AppLayout>} />
+            <Route path="/comunidad" element={<AppLayout><Comunidad /></AppLayout>} />
+            <Route path="/calendario" element={<AppLayout><Calendario /></AppLayout>} />
+            {/* Protected - require login */}
             <Route path="/perfil" element={<ProtectedRoute><AppLayout><Perfil /></AppLayout></ProtectedRoute>} />
             <Route path="/membresia" element={<ProtectedRoute><AppLayout><Membresia /></AppLayout></ProtectedRoute>} />
             <Route path="/admin" element={<AdminRoute><AppLayout><AdminCursos /></AppLayout></AdminRoute>} />
