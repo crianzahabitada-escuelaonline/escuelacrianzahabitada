@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { BookOpen, Calendar, ClipboardList, ArrowRight, CheckCircle, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import TaskManager from "@/components/TaskManager";
 
 type Student = { id: string; full_name: string; age: number | null };
-type Task = { id: string; student_id: string; title: string; due_date: string | null; status: string };
+type Task = { id: string; student_id: string; title: string; description: string | null; due_date: string | null; status: string; created_by: string | null };
 
 export default function Dashboard() {
   const { user, isAdmin } = useAuth();
