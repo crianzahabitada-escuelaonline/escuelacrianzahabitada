@@ -111,7 +111,7 @@ export default function Dashboard() {
   const loadData = useCallback(async () => {
     if (!user) return;
     const [sRes, tRes] = await Promise.all([
-      supabase.from("students").select("id, full_name, age").order("full_name"),
+      supabase.from("students").select("id, full_name, age, date_of_birth, languages, previous_education, special_needs").order("full_name"),
       supabase.from("student_tasks").select("id, student_id, title, description, due_date, status, created_by").order("due_date"),
     ]);
     setStudents(sRes.data || []);
