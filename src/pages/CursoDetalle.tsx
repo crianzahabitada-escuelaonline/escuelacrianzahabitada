@@ -124,7 +124,6 @@ export default function CursoDetalle() {
   if (!course) return <div className="p-8 text-center text-muted-foreground">Curso no encontrado.</div>;
 
   const currentLesson = lessons[activeLesson];
-  const isLessonLocked = currentLesson && !currentLesson.is_free && !canAccessPaid;
 
   return (
     <div className="space-y-6 animate-fade-in">
