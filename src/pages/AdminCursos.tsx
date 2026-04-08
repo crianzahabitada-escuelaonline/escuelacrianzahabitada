@@ -369,9 +369,10 @@ export default function AdminCursos() {
       </div>
 
       {/* Stats */}
-      <div className="grid sm:grid-cols-4 gap-4">
+      <div className="grid sm:grid-cols-5 gap-4">
         {[
           { icon: BookOpen, label: "Cursos", value: courses.length, color: "bg-primary/10 text-primary" },
+          { icon: ShoppingBag, label: "Productos", value: digitalProducts.length, color: "bg-lavender/20 text-lavender-foreground" },
           { icon: GraduationCap, label: "Estudiantes", value: students.length, color: "bg-sage/20 text-sage-foreground" },
           { icon: Calendar, label: "Eventos", value: events.length, color: "bg-terracotta/20 text-terracotta-foreground" },
           { icon: Users, label: "Suscriptores", value: subCount, color: "bg-primary/10 text-primary" },
