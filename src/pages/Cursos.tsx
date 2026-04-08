@@ -95,13 +95,16 @@ export default function Cursos() {
                 </span>
                 <h3 className="font-heading font-bold text-foreground mt-2 mb-1 text-lg">{course.title}</h3>
                 <p className="text-sm text-muted-foreground line-clamp-3">{course.description || ""}</p>
-                <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Play className="h-3.5 w-3.5" />{lessonCounts[course.id] || 0} lecciones
-                  </span>
+                <div className="flex items-center justify-between mt-3">
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Play className="h-3.5 w-3.5" />{lessonCounts[course.id] || 0} lecciones
+                    </span>
+                  </div>
+                  <span className="text-lg font-heading font-bold text-primary">${course.price ?? 10} USD</span>
                 </div>
                 <Link to={`/cursos/${course.id}`}>
-                  <Button className="w-full mt-4 rounded-xl">Ver Curso</Button>
+                  <Button className="w-full mt-3 rounded-xl">Ver Curso</Button>
                 </Link>
               </div>
             </div>
