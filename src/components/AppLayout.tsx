@@ -9,24 +9,31 @@ import {
   MessageCircle,
   User,
   X,
+  CreditCard,
+  Shield,
+  LogOut,
 } from "lucide-react";
 import logoMain from "@/assets/logo-crianza-habitada.png";
 import logoPaola from "@/assets/logo-paola-patricelli.jpg";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-
-const navItems = [
-  { to: "/", icon: Home, label: "Inicio" },
-  { to: "/cursos", icon: BookOpen, label: "Mis Cursos" },
-  { to: "/ebooks", icon: Library, label: "E-books" },
-  { to: "/comunidad", icon: MessageCircle, label: "Comunidad" },
-  { to: "/calendario", icon: Calendar, label: "Calendario" },
-  { to: "/perfil", icon: User, label: "Perfil" },
-];
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { isAdmin, hasActiveSubscription, signOut, user } = useAuth();
+
+  const navItems = [
+    { to: "/", icon: Home, label: "Inicio" },
+    { to: "/cursos", icon: BookOpen, label: "Mis Cursos" },
+    { to: "/ebooks", icon: Library, label: "E-books" },
+    { to: "/comunidad", icon: MessageCircle, label: "Comunidad" },
+    { to: "/calendario", icon: Calendar, label: "Calendario" },
+    { to: "/membresia", icon: CreditCard, label: "Membresía" },
+    { to: "/perfil", icon: User, label: "Perfil" },
+    ...(isAdmin ? [{ to: "/admin", icon: Shield, label: "Admin" }] : []),
+  ];
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
@@ -51,6 +58,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <img src={logoMain} alt="Crianza Habitada" className="h-16 w-auto" />
         </div>
 
+        {!hasActiveSubscription && !isAdmin && (
+          <div className="mx-3 mb-2 p-3 rounded-xl bg-accent/30 text-center">
+            <p className="text-xs text-foreground font-medium">Membresía inactiva</p>
+            <Link to="/membresia">
+              <Button size="sm" className="mt-2 rounded-xl w-full text-xs">Activar</Button>
+            </Link>
+          </div>
+        )}
+
         <nav className="flex-1 px-3 py-4 space-y-1">
           {navItems.map((item) => {
             const active = location.pathname === item.to;
@@ -73,11 +89,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
+        <div className="px-3 mb-2">
+          <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground rounded-xl" onClick={signOut}>
+            <LogOut className="h-4 w-4" /> Cerrar Sesión
+          </Button>
+        </div>
+
         <div className="px-3 mb-3">
           <div className="p-3 rounded-2xl bg-secondary text-center">
             <img src={logoPaola} alt="Paola Patricelli" className="h-14 w-auto mx-auto mb-2 rounded-lg" />
             <p className="text-xs text-muted-foreground">Creadora</p>
-            <p className="text-xs font-medium text-secondary-foreground">Lic. Paola Patricelli</p>
+            <p className="text-xs font-medium text-secondary-foreground">Dra. Paola Patricelli</p>
           </div>
         </div>
       </aside>

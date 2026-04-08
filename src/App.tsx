@@ -3,6 +3,8 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute, AdminRoute } from "@/components/ProtectedRoute";
 import AppLayout from "@/components/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 import Cursos from "@/pages/Cursos";
@@ -11,6 +13,9 @@ import Ebooks from "@/pages/Ebooks";
 import Comunidad from "@/pages/Comunidad";
 import Calendario from "@/pages/Calendario";
 import Perfil from "@/pages/Perfil";
+import Auth from "@/pages/Auth";
+import Membresia from "@/pages/Membresia";
+import AdminCursos from "@/pages/AdminCursos";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -21,18 +26,21 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AppLayout>
+        <AuthProvider>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/cursos" element={<Cursos />} />
-            <Route path="/cursos/:id" element={<CursoDetalle />} />
-            <Route path="/ebooks" element={<Ebooks />} />
-            <Route path="/comunidad" element={<Comunidad />} />
-            <Route path="/calendario" element={<Calendario />} />
-            <Route path="/perfil" element={<Perfil />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/" element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
+            <Route path="/cursos" element={<ProtectedRoute><AppLayout><Cursos /></AppLayout></ProtectedRoute>} />
+            <Route path="/cursos/:id" element={<ProtectedRoute><AppLayout><CursoDetalle /></AppLayout></ProtectedRoute>} />
+            <Route path="/ebooks" element={<ProtectedRoute><AppLayout><Ebooks /></AppLayout></ProtectedRoute>} />
+            <Route path="/comunidad" element={<ProtectedRoute><AppLayout><Comunidad /></AppLayout></ProtectedRoute>} />
+            <Route path="/calendario" element={<ProtectedRoute><AppLayout><Calendario /></AppLayout></ProtectedRoute>} />
+            <Route path="/perfil" element={<ProtectedRoute><AppLayout><Perfil /></AppLayout></ProtectedRoute>} />
+            <Route path="/membresia" element={<ProtectedRoute><AppLayout><Membresia /></AppLayout></ProtectedRoute>} />
+            <Route path="/admin" element={<AdminRoute><AppLayout><AdminCursos /></AppLayout></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </AppLayout>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
