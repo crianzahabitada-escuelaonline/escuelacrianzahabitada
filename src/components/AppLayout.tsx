@@ -12,6 +12,7 @@ import {
   CreditCard,
   Shield,
   LogOut,
+  LogIn,
 } from "lucide-react";
 import logoMain from "@/assets/logo-crianza-habitada.png";
 import logoPaola from "@/assets/logo-paola-patricelli.jpg";
@@ -22,16 +23,18 @@ import { useAuth } from "@/contexts/AuthContext";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const { isAdmin, hasActiveSubscription, signOut, user } = useAuth();
+  const { user, isAdmin, hasActiveSubscription, signOut } = useAuth();
 
   const navItems = [
     { to: "/", icon: Home, label: "Inicio" },
-    { to: "/cursos", icon: BookOpen, label: "Mis Cursos" },
+    { to: "/cursos", icon: BookOpen, label: "Cursos" },
     { to: "/ebooks", icon: Library, label: "E-books" },
     { to: "/comunidad", icon: MessageCircle, label: "Comunidad" },
     { to: "/calendario", icon: Calendar, label: "Calendario" },
-    { to: "/membresia", icon: CreditCard, label: "Membresía" },
-    { to: "/perfil", icon: User, label: "Perfil" },
+    ...(user ? [
+      { to: "/membresia", icon: CreditCard, label: "Membresía" },
+      { to: "/perfil", icon: User, label: "Perfil" },
+    ] : []),
     ...(isAdmin ? [{ to: "/admin", icon: Shield, label: "Admin" }] : []),
   ];
 
@@ -58,7 +61,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <img src={logoMain} alt="Crianza Habitada" className="h-16 w-auto" />
         </div>
 
-        {!hasActiveSubscription && !isAdmin && (
+        {user && !hasActiveSubscription && !isAdmin && (
           <div className="mx-3 mb-2 p-3 rounded-xl bg-accent/30 text-center">
             <p className="text-xs text-foreground font-medium">Membresía inactiva</p>
             <Link to="/membresia">
@@ -90,9 +93,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="px-3 mb-2">
-          <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground rounded-xl" onClick={signOut}>
-            <LogOut className="h-4 w-4" /> Cerrar Sesión
-          </Button>
+          {user ? (
+            <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground rounded-xl" onClick={signOut}>
+              <LogOut className="h-4 w-4" /> Cerrar Sesión
+            </Button>
+          ) : (
+            <Link to="/auth">
+              <Button variant="outline" size="sm" className="w-full justify-start gap-2 rounded-xl">
+                <LogIn className="h-4 w-4" /> Iniciar Sesión
+              </Button>
+            </Link>
+          )}
         </div>
 
         <div className="px-3 mb-3">
