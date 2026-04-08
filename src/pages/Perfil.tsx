@@ -1,8 +1,23 @@
 import { useState, useEffect } from "react";
-import { User, Mail, Bell, Shield, LogOut, ShoppingBag, Download, BookOpen, Loader2 } from "lucide-react";
+import { User, Mail, Shield, LogOut, ShoppingBag, Download, BookOpen, Loader2, Save, Edit2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+
+type Profile = {
+  full_name: string;
+  email: string;
+  phone: string;
+  country: string;
+  motivation: string;
+  homeschool_experience: string;
+  avatar_url: string;
+  created_at: string;
+};
 
 type Purchase = {
   id: string;
@@ -20,10 +35,19 @@ type Purchase = {
 };
 
 export default function Perfil() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<{ full_name: string; email: string; created_at: string } | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    full_name: "",
+    phone: "",
+    country: "",
+    motivation: "",
+    homeschool_experience: "",
+  });
 
   useEffect(() => {
     if (user) loadData();
@@ -32,7 +56,7 @@ export default function Perfil() {
   async function loadData() {
     setLoading(true);
     const [{ data: profileData }, { data: purchaseData }] = await Promise.all([
-      supabase.from("profiles").select("full_name, email, created_at").eq("id", user!.id).single(),
+      supabase.from("profiles").select("full_name, email, phone, country, motivation, homeschool_experience, avatar_url, created_at").eq("id", user!.id).single(),
       supabase
         .from("product_purchases")
         .select("id, amount, status, created_at, product_id, digital_products(title, author, cover_url, file_url, product_type)")
@@ -40,9 +64,41 @@ export default function Perfil() {
         .eq("status", "approved")
         .order("created_at", { ascending: false }),
     ]);
-    setProfile(profileData);
+    setProfile(profileData as Profile | null);
+    if (profileData) {
+      setForm({
+        full_name: profileData.full_name || "",
+        phone: (profileData as Profile).phone || "",
+        country: (profileData as Profile).country || "",
+        motivation: (profileData as Profile).motivation || "",
+        homeschool_experience: (profileData as Profile).homeschool_experience || "",
+      });
+    }
     setPurchases((purchaseData as unknown as Purchase[]) || []);
     setLoading(false);
+  }
+
+  async function handleSave() {
+    if (!user) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        full_name: form.full_name,
+        phone: form.phone,
+        country: form.country,
+        motivation: form.motivation,
+        homeschool_experience: form.homeschool_experience,
+      })
+      .eq("id", user.id);
+    setSaving(false);
+    if (error) {
+      toast.error("Error al guardar: " + error.message);
+      return;
+    }
+    toast.success("Perfil actualizado");
+    setEditing(false);
+    loadData();
   }
 
   const displayName = profile?.full_name || user?.email || "Usuario";
@@ -55,15 +111,68 @@ export default function Perfil() {
     <div className="space-y-6 animate-fade-in max-w-2xl">
       <h1 className="text-2xl font-heading font-bold text-foreground">Mi Perfil</h1>
 
-      <div className="organic-card p-6 flex items-center gap-5">
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-3xl">
-          🌻
+      {/* Profile Card */}
+      <div className="organic-card p-6">
+        <div className="flex items-center gap-5 mb-5">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-3xl">
+            🌻
+          </div>
+          <div className="flex-1">
+            <h2 className="font-heading font-bold text-foreground text-lg">{displayName}</h2>
+            <p className="text-sm text-muted-foreground">{displayEmail}</p>
+            {memberSince && <p className="text-xs text-muted-foreground mt-1">Miembro desde {memberSince}</p>}
+          </div>
+          {!editing && (
+            <Button variant="outline" size="sm" className="rounded-xl gap-1" onClick={() => setEditing(true)}>
+              <Edit2 className="h-3 w-3" /> Editar
+            </Button>
+          )}
         </div>
-        <div>
-          <h2 className="font-heading font-bold text-foreground text-lg">{displayName}</h2>
-          <p className="text-sm text-muted-foreground">{displayEmail}</p>
-          {memberSince && <p className="text-xs text-muted-foreground mt-1">Miembro desde {memberSince}</p>}
-        </div>
+
+        {editing ? (
+          <div className="space-y-4 border-t pt-4">
+            <div>
+              <Label>Nombre completo</Label>
+              <Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Teléfono</Label>
+                <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+54 9..." />
+              </div>
+              <div>
+                <Label>País</Label>
+                <Input value={form.country} onChange={e => setForm({ ...form, country: e.target.value })} placeholder="Argentina" />
+              </div>
+            </div>
+            <div>
+              <Label>Experiencia en homeschool</Label>
+              <Input value={form.homeschool_experience} onChange={e => setForm({ ...form, homeschool_experience: e.target.value })} placeholder="Ej: 2 años, recién empezando..." />
+            </div>
+            <div>
+              <Label>Motivación / ¿Por qué elegiste esta escuela?</Label>
+              <Textarea value={form.motivation} onChange={e => setForm({ ...form, motivation: e.target.value })} rows={3} placeholder="Contanos qué te trajo aquí..." />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleSave} disabled={saving} className="rounded-xl gap-1">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                {saving ? "Guardando..." : "Guardar"}
+              </Button>
+              <Button variant="outline" onClick={() => setEditing(false)} className="rounded-xl gap-1">
+                <X className="h-4 w-4" /> Cancelar
+              </Button>
+            </div>
+          </div>
+        ) : (
+          profile && (profile.phone || profile.country || profile.motivation || profile.homeschool_experience) && (
+            <div className="border-t pt-4 space-y-2 text-sm">
+              {profile.phone && <p><span className="text-muted-foreground">Teléfono:</span> <span className="text-foreground">{profile.phone}</span></p>}
+              {profile.country && <p><span className="text-muted-foreground">País:</span> <span className="text-foreground">{profile.country}</span></p>}
+              {profile.homeschool_experience && <p><span className="text-muted-foreground">Experiencia:</span> <span className="text-foreground">{profile.homeschool_experience}</span></p>}
+              {profile.motivation && <p><span className="text-muted-foreground">Motivación:</span> <span className="text-foreground">{profile.motivation}</span></p>}
+            </div>
+          )
+        )}
       </div>
 
       {/* Mis Compras */}
@@ -122,26 +231,8 @@ export default function Perfil() {
         )}
       </div>
 
-      <div className="space-y-2">
-        {[
-          { icon: User, label: "Editar Perfil", desc: "Nombre, foto y datos personales" },
-          { icon: Mail, label: "Notificaciones Email", desc: "Gestiona tus preferencias de correo" },
-          { icon: Bell, label: "Notificaciones", desc: "Alertas de cursos y eventos" },
-          { icon: Shield, label: "Privacidad y Seguridad", desc: "Contraseña y configuración de cuenta" },
-        ].map((item) => (
-          <div key={item.label} className="organic-card p-4 flex items-center gap-4 cursor-pointer">
-            <div className="p-2 rounded-xl bg-muted">
-              <item.icon className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <div className="flex-1">
-              <p className="font-medium text-foreground text-sm">{item.label}</p>
-              <p className="text-xs text-muted-foreground">{item.desc}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <Button variant="outline" className="rounded-xl gap-2 text-destructive border-destructive/30 hover:bg-destructive/5">
+      <Button variant="outline" className="rounded-xl gap-2 text-destructive border-destructive/30 hover:bg-destructive/5"
+        onClick={signOut}>
         <LogOut className="h-4 w-4" /> Cerrar Sesión
       </Button>
     </div>

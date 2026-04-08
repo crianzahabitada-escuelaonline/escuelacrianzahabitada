@@ -30,6 +30,11 @@ type Resource = {
   file_type: string;
 };
 
+function isDirectVideoUrl(url: string): boolean {
+  const lower = url.toLowerCase();
+  return /\.(mp4|webm|ogg|mov)(\?.*)?$/.test(lower) || lower.includes("/storage/v1/object/");
+}
+
 export default function CursoDetalle() {
   const { id } = useParams();
   const { user, hasActiveSubscription, isAdmin } = useAuth();
@@ -74,13 +79,23 @@ export default function CursoDetalle() {
         <div className="lg:col-span-2 space-y-4">
           <div className="rounded-2xl bg-foreground/5 aspect-video flex items-center justify-center overflow-hidden">
             {currentLesson && !isLessonLocked && currentLesson.video_url ? (
-              <iframe
-                src={currentLesson.video_url}
-                className="w-full h-full"
-                allow="autoplay; fullscreen"
-                allowFullScreen
-                title={currentLesson.title}
-              />
+              isDirectVideoUrl(currentLesson.video_url) ? (
+                <video
+                  src={currentLesson.video_url}
+                  className="w-full h-full"
+                  controls
+                  controlsList="nodownload"
+                  title={currentLesson.title}
+                />
+              ) : (
+                <iframe
+                  src={currentLesson.video_url}
+                  className="w-full h-full"
+                  allow="autoplay; fullscreen"
+                  allowFullScreen
+                  title={currentLesson.title}
+                />
+              )
             ) : isLessonLocked ? (
               <div className="text-center p-8">
                 <Lock className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
