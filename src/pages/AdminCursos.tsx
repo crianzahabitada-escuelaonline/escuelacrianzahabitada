@@ -11,6 +11,7 @@ import {
   Plus, Trash2, Eye, EyeOff, Users, BookOpen, CheckCircle, Clock,
   ClipboardList, FileText, ChevronDown, ChevronUp, GraduationCap,
   Calendar, Video, Grip, Play, Upload, Image, File, Loader2,
+  ShoppingBag, DollarSign,
 } from "lucide-react";
 
 const BUCKET = "course-content";
@@ -32,6 +33,12 @@ type CalendarEvent = {
 };
 type Resource = {
   id: string; course_id: string; title: string; file_url: string; file_type: string; created_at: string;
+};
+
+type DigitalProduct = {
+  id: string; title: string; description: string; author: string; price: number;
+  product_type: string; cover_url: string; file_url: string; pages_info: string;
+  is_published: boolean; created_at: string;
 };
 
 // Upload helper
@@ -81,6 +88,7 @@ export default function AdminCursos() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
+  const [digitalProducts, setDigitalProducts] = useState<DigitalProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [subCount, setSubCount] = useState(0);
 
@@ -117,6 +125,13 @@ export default function AdminCursos() {
   const [eventForm, setEventForm] = useState({ title: "", description: "", event_type: "webinar", event_date: "", event_time: "18:00", is_public: true, meeting_url: "" });
   const [savingEvent, setSavingEvent] = useState(false);
 
+  // Product form
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [productForm, setProductForm] = useState({ title: "", description: "", author: "Paola Patricelli", price: "", product_type: "guia", cover_url: "", file_url: "", pages_info: "" });
+  const [savingProduct, setSavingProduct] = useState(false);
+  const [uploadingProductCover, setUploadingProductCover] = useState(false);
+  const [uploadingProductFile, setUploadingProductFile] = useState(false);
+
   // Expanded
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
   const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
@@ -125,7 +140,7 @@ export default function AdminCursos() {
 
   async function loadAll() {
     setLoading(true);
-    const [coursesRes, lessonsRes, studentsRes, tasksRes, notesRes, eventsRes, subRes, resourcesRes] = await Promise.all([
+    const [coursesRes, lessonsRes, studentsRes, tasksRes, notesRes, eventsRes, subRes, resourcesRes, productsRes] = await Promise.all([
       supabase.from("courses").select("*").order("created_at", { ascending: false }),
       supabase.from("course_lessons").select("*").order("order_num"),
       supabase.from("students").select("*").order("full_name"),
@@ -134,6 +149,7 @@ export default function AdminCursos() {
       supabase.from("calendar_events").select("*").order("event_date"),
       supabase.from("subscriptions").select("*", { count: "exact", head: true }).eq("status", "active"),
       supabase.from("course_resources").select("*").order("created_at", { ascending: false }),
+      supabase.from("digital_products").select("*").order("created_at", { ascending: false }),
     ]);
     setCourses((coursesRes.data as Course[]) || []);
     setLessons((lessonsRes.data as Lesson[]) || []);
@@ -143,6 +159,7 @@ export default function AdminCursos() {
     setEvents((eventsRes.data as CalendarEvent[]) || []);
     setSubCount(subRes.count || 0);
     setResources((resourcesRes.data as Resource[]) || []);
+    setDigitalProducts((productsRes.data as DigitalProduct[]) || []);
     setLoading(false);
   }
 
@@ -302,6 +319,38 @@ export default function AdminCursos() {
     toast.success("Evento eliminado");
   }
 
+  // ---- Product CRUD ----
+  async function handleCreateProduct(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingProduct(true);
+    const { error } = await supabase.from("digital_products").insert({
+      title: productForm.title, description: productForm.description,
+      author: productForm.author, price: parseFloat(productForm.price) || 0,
+      product_type: productForm.product_type, cover_url: productForm.cover_url,
+      file_url: productForm.file_url, pages_info: productForm.pages_info,
+      is_published: false,
+    });
+    setSavingProduct(false);
+    if (error) { toast.error("Error: " + error.message); return; }
+    toast.success("Producto creado");
+    setProductForm({ title: "", description: "", author: "Paola Patricelli", price: "", product_type: "guia", cover_url: "", file_url: "", pages_info: "" });
+    setShowProductForm(false);
+    loadAll();
+  }
+
+  async function toggleProductPublish(product: DigitalProduct) {
+    await supabase.from("digital_products").update({ is_published: !product.is_published }).eq("id", product.id);
+    loadAll();
+    toast.success(product.is_published ? "Producto despublicado" : "Producto publicado");
+  }
+
+  async function deleteProduct(id: string) {
+    if (!confirm("¿Eliminar este producto?")) return;
+    await supabase.from("digital_products").delete().eq("id", id);
+    loadAll();
+    toast.success("Producto eliminado");
+  }
+
   if (!isAdmin) return <div className="p-8 text-center text-muted-foreground">No tienes acceso.</div>;
 
   const courseLessons = (courseId: string) => lessons.filter(l => l.course_id === courseId);
@@ -320,9 +369,10 @@ export default function AdminCursos() {
       </div>
 
       {/* Stats */}
-      <div className="grid sm:grid-cols-4 gap-4">
+      <div className="grid sm:grid-cols-5 gap-4">
         {[
           { icon: BookOpen, label: "Cursos", value: courses.length, color: "bg-primary/10 text-primary" },
+          { icon: ShoppingBag, label: "Productos", value: digitalProducts.length, color: "bg-lavender/20 text-lavender-foreground" },
           { icon: GraduationCap, label: "Estudiantes", value: students.length, color: "bg-sage/20 text-sage-foreground" },
           { icon: Calendar, label: "Eventos", value: events.length, color: "bg-terracotta/20 text-terracotta-foreground" },
           { icon: Users, label: "Suscriptores", value: subCount, color: "bg-primary/10 text-primary" },
@@ -338,8 +388,9 @@ export default function AdminCursos() {
       </div>
 
       <Tabs defaultValue="courses" className="space-y-4">
-        <TabsList className="rounded-xl">
+        <TabsList className="rounded-xl flex-wrap">
           <TabsTrigger value="courses" className="rounded-xl gap-1"><BookOpen className="h-4 w-4" /> Cursos</TabsTrigger>
+          <TabsTrigger value="products" className="rounded-xl gap-1"><ShoppingBag className="h-4 w-4" /> Productos</TabsTrigger>
           <TabsTrigger value="students" className="rounded-xl gap-1"><GraduationCap className="h-4 w-4" /> Estudiantes</TabsTrigger>
           <TabsTrigger value="calendar" className="rounded-xl gap-1"><Calendar className="h-4 w-4" /> Calendario</TabsTrigger>
         </TabsList>
@@ -763,6 +814,145 @@ export default function AdminCursos() {
                   <Button size="sm" variant="destructive" onClick={() => deleteEvent(event.id)} className="rounded-xl">
                     <Trash2 className="h-3 w-3" />
                   </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ===== PRODUCTS TAB ===== */}
+        <TabsContent value="products" className="space-y-4">
+          <Button onClick={() => setShowProductForm(!showProductForm)} className="rounded-xl gap-2">
+            <Plus className="h-4 w-4" /> Nuevo Producto
+          </Button>
+
+          {showProductForm && (
+            <form onSubmit={handleCreateProduct} className="organic-card p-6 space-y-4">
+              <h3 className="font-heading font-bold text-foreground">Crear Producto Digital</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Título *</Label>
+                  <Input value={productForm.title} onChange={e => setProductForm({ ...productForm, title: e.target.value })} required />
+                </div>
+                <div>
+                  <Label>Autor</Label>
+                  <Input value={productForm.author} onChange={e => setProductForm({ ...productForm, author: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <Label>Descripción</Label>
+                <Textarea value={productForm.description} onChange={e => setProductForm({ ...productForm, description: e.target.value })} rows={3} />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label>Tipo</Label>
+                  <select value={productForm.product_type} onChange={e => setProductForm({ ...productForm, product_type: e.target.value })}
+                    className="w-full h-10 rounded-xl border border-input bg-background px-3 text-sm">
+                    <option value="libro">Libro</option>
+                    <option value="guia">Guía / Cuadernillo</option>
+                    <option value="recurso">Recurso digital</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>Precio (USD) *</Label>
+                  <Input type="number" step="0.01" min="0" value={productForm.price}
+                    onChange={e => setProductForm({ ...productForm, price: e.target.value })} required placeholder="15" />
+                </div>
+                <div>
+                  <Label>Info adicional</Label>
+                  <Input value={productForm.pages_info} onChange={e => setProductForm({ ...productForm, pages_info: e.target.value })} placeholder="Ej: 120 páginas" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Portada</Label>
+                  {productForm.cover_url ? (
+                    <div className="flex items-center gap-2">
+                      <img src={productForm.cover_url} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setProductForm({ ...productForm, cover_url: "" })} className="text-xs">Quitar</Button>
+                    </div>
+                  ) : (
+                    <FileUploadButton label="Subir imagen" icon={Image} accept="image/*"
+                      uploading={uploadingProductCover} setUploading={setUploadingProductCover}
+                      onUploaded={url => setProductForm({ ...productForm, cover_url: url })} />
+                  )}
+                </div>
+                <div>
+                  <Label>Archivo del producto</Label>
+                  {productForm.file_url ? (
+                    <div className="flex items-center gap-2 bg-primary/5 rounded-lg p-2">
+                      <File className="h-4 w-4 text-primary shrink-0" />
+                      <span className="text-xs text-foreground truncate flex-1">{productForm.file_url.split("/").pop()}</span>
+                      <Button type="button" variant="ghost" size="sm" className="h-6 text-xs"
+                        onClick={() => setProductForm({ ...productForm, file_url: "" })}>Quitar</Button>
+                    </div>
+                  ) : (
+                    <FileUploadButton label="Subir archivo (PDF, ebook...)" icon={Upload}
+                      accept=".pdf,.epub,.doc,.docx,.zip"
+                      uploading={uploadingProductFile} setUploading={setUploadingProductFile}
+                      onUploaded={url => setProductForm({ ...productForm, file_url: url })} />
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" disabled={savingProduct || uploadingProductCover || uploadingProductFile} className="rounded-xl">
+                  {savingProduct ? "Guardando..." : "Crear Producto"}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setShowProductForm(false)} className="rounded-xl">Cancelar</Button>
+              </div>
+            </form>
+          )}
+
+          {loading ? <p className="text-muted-foreground">Cargando...</p> : digitalProducts.length === 0 ? (
+            <div className="organic-card p-8 text-center">
+              <ShoppingBag className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">No hay productos. ¡Crea el primero!</p>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-4">
+              {digitalProducts.map(product => (
+                <div key={product.id} className="organic-card overflow-hidden">
+                  <div className="flex gap-4 p-4">
+                    {product.cover_url ? (
+                      <img src={product.cover_url} alt="" className="w-20 h-28 rounded-xl object-cover shrink-0" />
+                    ) : (
+                      <div className="w-20 h-28 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <BookOpen className="h-8 w-8 text-primary" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          product.product_type === "libro" ? "bg-primary/10 text-primary"
+                          : product.product_type === "guia" ? "bg-terracotta/20 text-terracotta-foreground"
+                          : "bg-sage/20 text-sage-foreground"
+                        }`}>
+                          {product.product_type === "libro" ? "Libro" : product.product_type === "guia" ? "Guía" : "Recurso"}
+                        </span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${product.is_published ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                          {product.is_published ? "Publicado" : "Borrador"}
+                        </span>
+                      </div>
+                      <h3 className="font-medium text-foreground truncate">{product.title}</h3>
+                      <p className="text-xs text-muted-foreground">{product.author}</p>
+                      {product.pages_info && <p className="text-xs text-primary mt-0.5">{product.pages_info}</p>}
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-sm font-bold text-primary flex items-center gap-1">
+                          <DollarSign className="h-3 w-3" /> USD ${product.price}
+                        </span>
+                        {product.file_url && <File className="h-3 w-3 text-muted-foreground" />}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-t border-border p-3 flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => toggleProductPublish(product)} className="rounded-xl gap-1 flex-1">
+                      {product.is_published ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                      {product.is_published ? "Despublicar" : "Publicar"}
+                    </Button>
+                    <Button size="sm" variant="destructive" onClick={() => deleteProduct(product.id)} className="rounded-xl">
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
