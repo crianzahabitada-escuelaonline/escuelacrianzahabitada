@@ -11,6 +11,7 @@ type Course = {
   cover_url: string;
   category: string;
   is_published: boolean;
+  price: number;
 };
 
 type LessonCount = { course_id: string; count: number };
@@ -24,7 +25,7 @@ export default function Cursos() {
     async function load() {
       const { data: coursesData } = await supabase
         .from("courses")
-        .select("id, title, description, cover_url, category, is_published")
+        .select("id, title, description, cover_url, category, is_published, price")
         .eq("is_published", true)
         .order("created_at", { ascending: false });
 
