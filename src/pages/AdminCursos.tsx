@@ -11,7 +11,7 @@ import {
   Plus, Trash2, Eye, EyeOff, Users, BookOpen, CheckCircle, Clock,
   ClipboardList, FileText, ChevronDown, ChevronUp, GraduationCap,
   Calendar, Video, Grip, Play, Upload, Image, File, Loader2,
-  ShoppingBag, DollarSign,
+  ShoppingBag, DollarSign, Pencil,
 } from "lucide-react";
 
 const BUCKET = "course-content";
