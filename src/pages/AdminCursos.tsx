@@ -95,9 +95,21 @@ export default function AdminCursos() {
 
   // Course form
   const [showCourseForm, setShowCourseForm] = useState(false);
-  const [courseForm, setCourseForm] = useState({ title: "", description: "", category: "general", content_url: "", cover_url: "" });
+  const [courseForm, setCourseForm] = useState({ title: "", description: "", category: "general", content_url: "", cover_url: "", price: "10" });
   const [savingCourse, setSavingCourse] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+
+  // Edit course
+  const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
+  const [editCourseForm, setEditCourseForm] = useState({ title: "", description: "", category: "", cover_url: "", price: "10" });
+  const [savingEditCourse, setSavingEditCourse] = useState(false);
+  const [uploadingEditCover, setUploadingEditCover] = useState(false);
+
+  // Edit lesson
+  const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
+  const [editLessonForm, setEditLessonForm] = useState({ title: "", description: "", video_url: "", duration: "", is_free: false });
+  const [savingEditLesson, setSavingEditLesson] = useState(false);
+  const [uploadingEditVideo, setUploadingEditVideo] = useState(false);
 
   // Lesson form
   const [lessonCourseId, setLessonCourseId] = useState<string | null>(null);
