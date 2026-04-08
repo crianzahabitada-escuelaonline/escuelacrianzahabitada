@@ -34,7 +34,7 @@ const App = () => (
             <Route path="/cursos" element={<AppLayout><Cursos /></AppLayout>} />
             <Route path="/cursos/:id" element={<AppLayout><CursoDetalle /></AppLayout>} />
             <Route path="/ebooks" element={<AppLayout><Ebooks /></AppLayout>} />
-            <Route path="/comunidad" element={<AppLayout><Comunidad /></AppLayout>} />
+            <Route path="/comunidad" element={<ProtectedRoute><AppLayout><Comunidad /></AppLayout></ProtectedRoute>} />
             <Route path="/calendario" element={<AppLayout><Calendario /></AppLayout>} />
             {/* Protected - require login */}
             <Route path="/perfil" element={<ProtectedRoute><AppLayout><Perfil /></AppLayout></ProtectedRoute>} />
