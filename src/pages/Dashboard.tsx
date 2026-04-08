@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { BookOpen, Calendar, ClipboardList, ArrowRight, CheckCircle, Clock } from "lucide-react";
+import { BookOpen, Calendar, ClipboardList, ArrowRight, CheckCircle, Clock, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,8 +8,10 @@ import TaskManager from "@/components/TaskManager";
 type Student = { id: string; full_name: string; age: number | null };
 type Task = { id: string; student_id: string; title: string; description: string | null; due_date: string | null; status: string; created_by: string | null };
 
+const CLASS_DAYS = ["Lunes", "Miércoles", "Viernes"];
+
 export default function Dashboard() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, hasActiveSubscription } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,15 +38,101 @@ export default function Dashboard() {
 
   const studentName = (id: string) => students.find(s => s.id === id)?.full_name || "—";
 
+  // Non-admin users get the student/family portal view
+  if (!isAdmin) {
+    return (
+      <div className="space-y-8 animate-fade-in">
+        {/* Welcome */}
+        <div className="rounded-3xl bg-secondary p-6 md:p-8">
+          <h1 className="text-2xl md:text-3xl font-heading font-bold text-foreground mb-2">
+            ¡Bienvenida a tu espacio! 🌱
+          </h1>
+          <p className="text-muted-foreground max-w-xl">
+            Aquí encontrarás las tareas asignadas por tu maestra y tu calendario de clases.
+          </p>
+        </div>
+
+        {loading ? (
+          <p className="text-muted-foreground">Cargando...</p>
+        ) : (
+          <>
+            {/* Stats */}
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="organic-card p-5 flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-terracotta/20 text-terracotta-foreground">
+                  <ClipboardList className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-2xl font-heading font-bold text-foreground">{pendingTasks.length}</p>
+                  <p className="text-sm text-muted-foreground">Tareas Pendientes</p>
+                </div>
+              </div>
+              <div className="organic-card p-5 flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-sage/20 text-sage-foreground">
+                  <CheckCircle className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-2xl font-heading font-bold text-foreground">{completedTasks.length}</p>
+                  <p className="text-sm text-muted-foreground">Tareas Completadas</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Class Calendar */}
+            <div className="space-y-4">
+              <h2 className="text-lg font-heading font-bold text-foreground flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-primary" />
+                Calendario de Clases
+              </h2>
+              <div className="organic-card p-5">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Las clases se realizan <strong className="text-foreground">3 veces por semana</strong>:
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  {CLASS_DAYS.map(day => (
+                    <div key={day} className="rounded-xl bg-secondary p-4 text-center">
+                      <p className="font-medium text-foreground text-sm">{day}</p>
+                      {hasActiveSubscription ? (
+                        <p className="text-xs text-primary mt-1 font-medium">Horario confirmado</p>
+                      ) : (
+                        <div className="flex items-center justify-center gap-1 mt-1">
+                          <Lock className="h-3 w-3 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">Por definir</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {!hasActiveSubscription && (
+                  <div className="mt-4 p-3 rounded-xl bg-accent/30 text-center">
+                    <p className="text-xs text-foreground">
+                      Los horarios se asignan al activar tu membresía.
+                    </p>
+                    <Link to="/membresia" className="text-xs text-primary font-medium hover:underline">
+                      Activar membresía →
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Tasks — read only for students */}
+            <TaskManager students={students} tasks={tasks} onTasksChanged={loadData} readOnly />
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // Admin / Teacher view
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Welcome */}
       <div className="rounded-3xl bg-secondary p-6 md:p-8">
         <h1 className="text-2xl md:text-3xl font-heading font-bold text-foreground mb-2">
-          ¡Bienvenida a tu espacio! 🌱
+          Panel de Maestra 🌱
         </h1>
         <p className="text-muted-foreground max-w-xl">
-          Un lugar donde la crianza se vive con presencia, amor y comunidad.
+          Gestioná las tareas y el progreso de tus estudiantes.
         </p>
       </div>
 
@@ -76,11 +164,9 @@ export default function Dashboard() {
             <div className="lg:col-span-3 space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-heading font-bold text-foreground">Mis Estudiantes</h2>
-                {isAdmin && (
-                  <Link to="/admin" className="text-sm text-primary hover:underline flex items-center gap-1">
-                    Gestionar <ArrowRight className="h-4 w-4" />
-                  </Link>
-                )}
+                <Link to="/admin" className="text-sm text-primary hover:underline flex items-center gap-1">
+                  Gestionar <ArrowRight className="h-4 w-4" />
+                </Link>
               </div>
               {students.length === 0 ? (
                 <div className="organic-card p-6 text-center text-muted-foreground">
@@ -139,7 +225,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Task Management */}
+          {/* Task Management — full CRUD for teachers */}
           <TaskManager students={students} tasks={tasks} onTasksChanged={loadData} />
         </>
       )}
