@@ -231,11 +231,10 @@ export default function CursoDetalle() {
                 return (
                   <button
                     key={lesson.id}
-                    onClick={() => !locked && setActiveLesson(idx)}
-                    disabled={locked}
-                    className={`w-full text-left organic-card p-3 flex items-center gap-3 transition-colors ${
+                    onClick={() => setActiveLesson(idx)}
+                    className={`w-full text-left organic-card p-3 flex items-center gap-3 transition-colors hover:bg-muted/30 ${
                       idx === activeLesson ? "ring-2 ring-primary" : ""
-                    } ${locked ? "opacity-50 cursor-not-allowed" : "hover:bg-muted/30"}`}
+                    }`}
                   >
                     {locked ? (
                       <Lock className="h-5 w-5 text-muted-foreground/50 shrink-0" />
