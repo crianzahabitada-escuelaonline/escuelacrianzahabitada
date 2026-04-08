@@ -518,12 +518,15 @@ export default function AdminCursos() {
                       )}
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-foreground truncate">{course.title}</h3>
-                        <p className="text-xs text-muted-foreground">{cLessons.length} lecciones · {cResources.length} recursos · {course.category}</p>
+                        <p className="text-xs text-muted-foreground">{cLessons.length} lecciones · {cResources.length} recursos · {course.category} · ${course.price ?? 10} USD</p>
                       </div>
                     </button>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${course.is_published ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
                       {course.is_published ? "Publicado" : "Borrador"}
                     </span>
+                    <Button size="sm" variant="outline" onClick={() => startEditCourse(course)} className="rounded-xl gap-1">
+                      <Pencil className="h-3 w-3" />
+                    </Button>
                     <Button size="sm" variant="outline" onClick={() => togglePublish(course)} className="rounded-xl gap-1">
                       {course.is_published ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                     </Button>
