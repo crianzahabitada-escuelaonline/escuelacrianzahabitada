@@ -49,7 +49,8 @@ export default function CursoDetalle() {
   const [hasPurchased, setHasPurchased] = useState(false);
   const [buying, setBuying] = useState(false);
 
-  const canAccessPaid = hasActiveSubscription || isAdmin || hasPurchased;
+  const isFree = course?.price === 0;
+  const canAccessPaid = hasActiveSubscription || isAdmin || hasPurchased || isFree;
 
   useEffect(() => {
     if (!id) return;
