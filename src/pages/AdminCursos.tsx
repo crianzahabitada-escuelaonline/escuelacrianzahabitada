@@ -11,6 +11,7 @@ import {
   Plus, Trash2, Eye, EyeOff, Users, BookOpen, CheckCircle, Clock,
   ClipboardList, FileText, ChevronDown, ChevronUp, GraduationCap,
   Calendar, Video, Grip, Play, Upload, Image, File, Loader2,
+  ShoppingBag, DollarSign,
 } from "lucide-react";
 
 const BUCKET = "course-content";
@@ -32,6 +33,12 @@ type CalendarEvent = {
 };
 type Resource = {
   id: string; course_id: string; title: string; file_url: string; file_type: string; created_at: string;
+};
+
+type DigitalProduct = {
+  id: string; title: string; description: string; author: string; price: number;
+  product_type: string; cover_url: string; file_url: string; pages_info: string;
+  is_published: boolean; created_at: string;
 };
 
 // Upload helper
