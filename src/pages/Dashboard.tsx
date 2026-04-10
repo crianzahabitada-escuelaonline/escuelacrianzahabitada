@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import TaskManager from "@/components/TaskManager";
 import StudentManager from "@/components/StudentManager";
+import TeacherManager from "@/components/TeacherManager";
 
 type Student = { id: string; full_name: string; age: number | null; date_of_birth: string | null; languages: string | null; previous_education: string | null; special_needs: string | null };
 type Task = { id: string; student_id: string; title: string; description: string | null; due_date: string | null; status: string; created_by: string | null };
@@ -103,7 +104,7 @@ function DeadlineBanner({ tasks, studentName }: { tasks: Task[]; studentName: (i
 }
 
 export default function Dashboard() {
-  const { user, isAdmin, hasActiveSubscription } = useAuth();
+  const { user, isAdmin, isTeacher, hasActiveSubscription } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,8 +131,8 @@ export default function Dashboard() {
 
   const studentName = (id: string) => students.find(s => s.id === id)?.full_name || "—";
 
-  // Non-admin users get the student/family portal view
-  if (!isAdmin) {
+  // Non-admin and non-teacher users get the student/family portal view
+  if (!isAdmin && !isTeacher) {
     return (
       <div className="space-y-8 animate-fade-in">
         {/* Welcome */}
@@ -223,7 +224,7 @@ export default function Dashboard() {
     <div className="space-y-8 animate-fade-in">
       <div className="rounded-3xl bg-secondary p-6 md:p-8">
         <h1 className="text-2xl md:text-3xl font-heading font-bold text-foreground mb-2">
-          Panel de Maestra 🌱
+          {isAdmin ? "Panel de Administración 🌱" : "Panel de Maestra 🌱"}
         </h1>
         <p className="text-muted-foreground max-w-xl">
           Gestioná las tareas y el progreso de tus estudiantes.
@@ -291,6 +292,9 @@ export default function Dashboard() {
 
           {/* Task Management — full CRUD for teachers */}
           <TaskManager students={students} tasks={tasks} onTasksChanged={loadData} />
+
+          {/* Teacher Management — admin only */}
+          {isAdmin && <TeacherManager />}
         </>
       )}
     </div>

@@ -7,6 +7,7 @@ type AuthContextType = {
   session: Session | null;
   loading: boolean;
   isAdmin: boolean;
+  isTeacher: boolean;
   hasActiveSubscription: boolean;
   signOut: () => Promise<void>;
 };
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   loading: true,
   isAdmin: false,
+  isTeacher: false,
   hasActiveSubscription: false,
   signOut: async () => {},
 });
@@ -27,6 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isTeacher, setIsTeacher] = useState(false);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
 
   useEffect(() => {
@@ -35,11 +38,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       if (session?.user) {
         setTimeout(() => {
-          checkRole(session.user.id);
+          checkRoles(session.user.id);
           checkSubscription(session.user.id);
         }, 0);
       } else {
         setIsAdmin(false);
+        setIsTeacher(false);
         setHasActiveSubscription(false);
       }
       setLoading(false);
@@ -49,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        checkRole(session.user.id);
+        checkRoles(session.user.id);
         checkSubscription(session.user.id);
       }
       setLoading(false);
@@ -58,9 +62,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function checkRole(userId: string) {
-    const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
-    setIsAdmin(!!data);
+  async function checkRoles(userId: string) {
+    const [adminRes, teacherRes] = await Promise.all([
+      supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
+      supabase.rpc("has_role", { _user_id: userId, _role: "teacher" }),
+    ]);
+    setIsAdmin(!!adminRes.data);
+    setIsTeacher(!!teacherRes.data);
   }
 
   async function checkSubscription(userId: string) {
@@ -78,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, hasActiveSubscription, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isAdmin, isTeacher, hasActiveSubscription, signOut }}>
       {children}
     </AuthContext.Provider>
   );
