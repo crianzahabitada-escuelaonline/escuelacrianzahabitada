@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Pencil, UserPlus, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Pencil, UserPlus, Trash2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 
 type Student = {
@@ -21,6 +28,12 @@ type Student = {
   languages: string | null;
   previous_education: string | null;
   special_needs: string | null;
+};
+
+type Profile = {
+  id: string;
+  full_name: string;
+  email: string;
 };
 
 interface StudentManagerProps {
@@ -35,6 +48,7 @@ type FormData = {
   languages: string;
   previous_education: string;
   special_needs: string;
+  tutor_id: string;
 };
 
 const emptyForm: FormData = {
@@ -44,23 +58,49 @@ const emptyForm: FormData = {
   languages: "",
   previous_education: "",
   special_needs: "",
+  tutor_id: "",
 };
 
 export default function StudentManager({ students, onStudentsChanged }: StudentManagerProps) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [bulkTutorId, setBulkTutorId] = useState("");
+
+  // Load profiles for admin tutor selection
+  useEffect(() => {
+    if (!isAdmin) return;
+    supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .order("full_name")
+      .then(({ data }) => {
+        if (data) setProfiles(data);
+      });
+  }, [isAdmin]);
 
   const openNew = () => {
     setEditingId(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, tutor_id: isAdmin ? "" : user!.id });
+    setBulkMode(false);
+    setOpen(true);
+  };
+
+  const openBulk = () => {
+    setBulkMode(true);
+    setBulkText("");
+    setBulkTutorId("");
     setOpen(true);
   };
 
   const openEdit = (s: Student) => {
     setEditingId(s.id);
+    setBulkMode(false);
     setForm({
       full_name: s.full_name,
       age: s.age?.toString() || "",
@@ -68,6 +108,7 @@ export default function StudentManager({ students, onStudentsChanged }: StudentM
       languages: s.languages || "",
       previous_education: s.previous_education || "",
       special_needs: s.special_needs || "",
+      tutor_id: "",
     });
     setOpen(true);
   };
@@ -77,6 +118,7 @@ export default function StudentManager({ students, onStudentsChanged }: StudentM
       toast.error("El nombre es obligatorio");
       return;
     }
+    const tutorId = isAdmin && form.tutor_id ? form.tutor_id : user!.id;
     setSaving(true);
     try {
       const payload = {
@@ -98,11 +140,39 @@ export default function StudentManager({ students, onStudentsChanged }: StudentM
       } else {
         const { error } = await supabase.from("students").insert({
           ...payload,
-          tutor_id: user!.id,
+          tutor_id: tutorId,
         });
         if (error) throw error;
         toast.success("Estudiante agregado");
       }
+      setOpen(false);
+      onStudentsChanged();
+    } catch (err: any) {
+      toast.error(err.message || "Error al guardar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleBulkSave = async () => {
+    const lines = bulkText
+      .split("\n")
+      .map(l => l.trim())
+      .filter(Boolean);
+    if (lines.length === 0) {
+      toast.error("Ingresá al menos un nombre");
+      return;
+    }
+    const tutorId = isAdmin && bulkTutorId ? bulkTutorId : user!.id;
+    setSaving(true);
+    try {
+      const rows = lines.map(name => ({
+        full_name: name,
+        tutor_id: tutorId,
+      }));
+      const { error } = await supabase.from("students").insert(rows);
+      if (error) throw error;
+      toast.success(`${lines.length} estudiante(s) agregado(s)`);
       setOpen(false);
       onStudentsChanged();
     } catch (err: any) {
@@ -123,13 +193,23 @@ export default function StudentManager({ students, onStudentsChanged }: StudentM
     onStudentsChanged();
   };
 
+  const tutorLabel = (p: Profile) =>
+    p.full_name ? `${p.full_name} (${p.email})` : p.email;
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-heading font-bold text-foreground">Mis Estudiantes</h2>
-        <Button size="sm" onClick={openNew} className="shrink-0">
-          <Plus className="h-4 w-4 mr-1" /> Agregar
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          {isAdmin && (
+            <Button size="sm" variant="outline" onClick={openBulk}>
+              <Users className="h-4 w-4 mr-1" /> Carga rápida
+            </Button>
+          )}
+          <Button size="sm" onClick={openNew}>
+            <Plus className="h-4 w-4 mr-1" /> Agregar
+          </Button>
+        </div>
       </div>
 
       {students.length === 0 ? (
@@ -179,78 +259,144 @@ export default function StudentManager({ students, onStudentsChanged }: StudentM
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-heading">
-              {editingId ? "Editar Estudiante" : "Agregar Estudiante"}
+              {bulkMode
+                ? "Carga Rápida de Estudiantes"
+                : editingId
+                ? "Editar Estudiante"
+                : "Agregar Estudiante"}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div>
-              <label className="text-sm font-medium text-foreground">Nombre completo *</label>
-              <Input
-                className="mt-1"
-                value={form.full_name}
-                onChange={e => setForm({ ...form, full_name: e.target.value })}
-                placeholder="Nombre del estudiante"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+
+          {bulkMode ? (
+            <div className="space-y-4 mt-2">
+              <p className="text-sm text-muted-foreground">
+                Escribí un nombre por línea para agregar varios estudiantes a la vez.
+              </p>
+              {isAdmin && profiles.length > 0 && (
+                <div>
+                  <label className="text-sm font-medium text-foreground">Asignar a tutor/familia</label>
+                  <Select value={bulkTutorId} onValueChange={setBulkTutorId}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Seleccionar tutor…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {profiles.map(p => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {tutorLabel(p)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div>
-                <label className="text-sm font-medium text-foreground">Edad</label>
-                <Input
-                  type="number"
+                <label className="text-sm font-medium text-foreground">Nombres (uno por línea)</label>
+                <Textarea
                   className="mt-1"
-                  min={1}
-                  max={18}
-                  value={form.age}
-                  onChange={e => setForm({ ...form, age: e.target.value })}
-                  placeholder="Ej: 8"
+                  rows={6}
+                  value={bulkText}
+                  onChange={e => setBulkText(e.target.value)}
+                  placeholder={"María García\nJuan Pérez\nLucía López"}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {bulkText.split("\n").filter(l => l.trim()).length} estudiante(s)
+                </p>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+                <Button onClick={handleBulkSave} disabled={saving}>
+                  {saving ? "Guardando…" : "Agregar todos"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 mt-2">
+              {isAdmin && !editingId && profiles.length > 0 && (
+                <div>
+                  <label className="text-sm font-medium text-foreground">Asignar a tutor/familia</label>
+                  <Select value={form.tutor_id} onValueChange={v => setForm({ ...form, tutor_id: v })}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Seleccionar tutor…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {profiles.map(p => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {tutorLabel(p)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <div>
+                <label className="text-sm font-medium text-foreground">Nombre completo *</label>
+                <Input
+                  className="mt-1"
+                  value={form.full_name}
+                  onChange={e => setForm({ ...form, full_name: e.target.value })}
+                  placeholder="Nombre del estudiante"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-medium text-foreground">Edad</label>
+                  <Input
+                    type="number"
+                    className="mt-1"
+                    min={1}
+                    max={18}
+                    value={form.age}
+                    onChange={e => setForm({ ...form, age: e.target.value })}
+                    placeholder="Ej: 8"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground">Fecha de nacimiento</label>
+                  <Input
+                    type="date"
+                    className="mt-1"
+                    value={form.date_of_birth}
+                    onChange={e => setForm({ ...form, date_of_birth: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Idiomas</label>
+                <Input
+                  className="mt-1"
+                  value={form.languages}
+                  onChange={e => setForm({ ...form, languages: e.target.value })}
+                  placeholder="Ej: Español, Inglés"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground">Fecha de nacimiento</label>
-                <Input
-                  type="date"
+                <label className="text-sm font-medium text-foreground">Educación previa</label>
+                <Textarea
                   className="mt-1"
-                  value={form.date_of_birth}
-                  onChange={e => setForm({ ...form, date_of_birth: e.target.value })}
+                  rows={2}
+                  value={form.previous_education}
+                  onChange={e => setForm({ ...form, previous_education: e.target.value })}
+                  placeholder="Descripción breve…"
                 />
               </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Necesidades especiales</label>
+                <Textarea
+                  className="mt-1"
+                  rows={2}
+                  value={form.special_needs}
+                  onChange={e => setForm({ ...form, special_needs: e.target.value })}
+                  placeholder="Opcional…"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving ? "Guardando…" : editingId ? "Guardar" : "Agregar"}
+                </Button>
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Idiomas</label>
-              <Input
-                className="mt-1"
-                value={form.languages}
-                onChange={e => setForm({ ...form, languages: e.target.value })}
-                placeholder="Ej: Español, Inglés"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Educación previa</label>
-              <Textarea
-                className="mt-1"
-                rows={2}
-                value={form.previous_education}
-                onChange={e => setForm({ ...form, previous_education: e.target.value })}
-                placeholder="Descripción breve…"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Necesidades especiales</label>
-              <Textarea
-                className="mt-1"
-                rows={2}
-                value={form.special_needs}
-                onChange={e => setForm({ ...form, special_needs: e.target.value })}
-                placeholder="Opcional…"
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? "Guardando…" : editingId ? "Guardar" : "Agregar"}
-              </Button>
-            </div>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
