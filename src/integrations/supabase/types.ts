@@ -432,6 +432,7 @@ export type Database = {
           languages: string | null
           previous_education: string | null
           special_needs: string | null
+          teacher_id: string | null
           tutor_id: string
           updated_at: string
         }
@@ -444,6 +445,7 @@ export type Database = {
           languages?: string | null
           previous_education?: string | null
           special_needs?: string | null
+          teacher_id?: string | null
           tutor_id: string
           updated_at?: string
         }
@@ -456,6 +458,7 @@ export type Database = {
           languages?: string | null
           previous_education?: string | null
           special_needs?: string | null
+          teacher_id?: string | null
           tutor_id?: string
           updated_at?: string
         }
