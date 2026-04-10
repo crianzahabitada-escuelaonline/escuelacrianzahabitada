@@ -62,7 +62,8 @@ const emptyForm: FormData = {
 };
 
 export default function StudentManager({ students, onStudentsChanged }: StudentManagerProps) {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isTeacher } = useAuth();
+  const canManage = isAdmin || isTeacher;
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>(emptyForm);
