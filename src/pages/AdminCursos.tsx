@@ -52,14 +52,22 @@ type Subscription = {
   mp_subscription_id: string | null; created_at: string;
 };
 
-// Upload helper
+// Upload helper - returns storage path (not public URL since bucket is private)
 async function uploadFile(file: globalThis.File, folder: string): Promise<string | null> {
   const ext = file.name.split(".").pop();
   const path = `${folder}/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, file);
   if (error) { toast.error("Error al subir: " + error.message); return null; }
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+  // Store the path, signed URLs will be generated at display time
+  return path;
+}
+
+// Helper to get a signed URL for a stored path
+async function getSignedUrl(path: string): Promise<string | null> {
+  if (!path || path.startsWith("http")) return path; // already a full URL
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 3600);
+  if (error) return null;
+  return data.signedUrl;
 }
 
 function FileUploadButton({ label, icon: Icon, accept, onUploaded, uploading, setUploading }: {
