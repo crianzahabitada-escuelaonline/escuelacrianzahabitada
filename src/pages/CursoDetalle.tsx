@@ -71,10 +71,12 @@ export default function CursoDetalle() {
         supabase.from("course_resources").select("*").eq("course_id", id),
       ]);
       setCourse(courseRes.data as Course | null);
-      setLessons((lessonsRes.data as Lesson[]) || []);
-      setResources((resourcesRes.data as Resource[]) || []);
+      
+      const rawLessons = (lessonsRes.data as Lesson[]) || [];
+      const rawResources = (resourcesRes.data as Resource[]) || [];
 
       // Check if user purchased this course
+      let purchased = false;
       if (user) {
         const { data: purchase } = await supabase
           .from("course_purchases" as any)
@@ -83,9 +85,22 @@ export default function CursoDetalle() {
           .eq("course_id", id)
           .eq("status", "approved")
           .maybeSingle();
-        setHasPurchased(!!purchase);
+        purchased = !!purchase;
+        setHasPurchased(purchased);
       }
 
+      // Resolve signed URLs for storage paths
+      const resolvedLessons = await Promise.all(rawLessons.map(async (l) => ({
+        ...l,
+        video_url: l.video_url ? await resolveStorageUrl(l.video_url) : l.video_url,
+      })));
+      const resolvedResources = await Promise.all(rawResources.map(async (r) => ({
+        ...r,
+        file_url: r.file_url ? await resolveStorageUrl(r.file_url) : r.file_url,
+      })));
+
+      setLessons(resolvedLessons);
+      setResources(resolvedResources);
       setLoading(false);
     }
     load();
