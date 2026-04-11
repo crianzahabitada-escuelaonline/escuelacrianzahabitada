@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
+const BUCKET = "course-content";
+
 type Course = {
   id: string;
   title: string;
@@ -35,6 +37,14 @@ type Resource = {
 function isDirectVideoUrl(url: string): boolean {
   const lower = url.toLowerCase();
   return /\.(mp4|webm|ogg|mov)(\?.*)?$/.test(lower) || lower.includes("/storage/v1/object/");
+}
+
+async function resolveStorageUrl(path: string): Promise<string> {
+  if (!path) return path;
+  if (path.startsWith("http")) return path; // already a full URL (external)
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 3600);
+  if (error || !data) return path;
+  return data.signedUrl;
 }
 
 export default function CursoDetalle() {
