@@ -15,3 +15,11 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
   if (!isAdmin) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
+
+export function TeacherRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading, isAdmin, isTeacher } = useAuth();
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Cargando...</div>;
+  if (!user) return <Navigate to="/auth" replace />;
+  if (!isTeacher && !isAdmin) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+}

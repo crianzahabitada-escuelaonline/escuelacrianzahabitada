@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { ProtectedRoute, AdminRoute } from "@/components/ProtectedRoute";
+import { ProtectedRoute, AdminRoute, TeacherRoute } from "@/components/ProtectedRoute";
 import AppLayout from "@/components/AppLayout";
 import Index from "@/pages/Index";
 import Dashboard from "@/pages/Dashboard";
@@ -17,6 +17,7 @@ import Perfil from "@/pages/Perfil";
 import Auth from "@/pages/Auth";
 import Membresia from "@/pages/Membresia";
 import AdminCursos from "@/pages/AdminCursos";
+import MaestrosPanel from "@/pages/MaestrosPanel";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/perfil" element={<ProtectedRoute><AppLayout><Perfil /></AppLayout></ProtectedRoute>} />
             <Route path="/membresia" element={<ProtectedRoute><AppLayout><Membresia /></AppLayout></ProtectedRoute>} />
             <Route path="/admin" element={<AdminRoute><AppLayout><AdminCursos /></AppLayout></AdminRoute>} />
+            <Route path="/maestros" element={<TeacherRoute><AppLayout><MaestrosPanel /></AppLayout></TeacherRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

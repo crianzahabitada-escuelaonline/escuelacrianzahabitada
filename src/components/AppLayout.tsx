@@ -13,6 +13,7 @@ import {
   Shield,
   LogOut,
   LogIn,
+  GraduationCap,
 } from "lucide-react";
 import logoMain from "@/assets/logo-crianza-habitada.png";
 import logoPaola from "@/assets/logo-paola-patricelli.jpg";
@@ -23,7 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const { user, isAdmin, hasActiveSubscription, signOut } = useAuth();
+  const { user, isAdmin, isTeacher, hasActiveSubscription, signOut } = useAuth();
 
   const navItems = [
     { to: "/dashboard", icon: Home, label: "Inicio" },
@@ -35,6 +36,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       { to: "/membresia", icon: CreditCard, label: "Membresía" },
       { to: "/perfil", icon: User, label: "Perfil" },
     ] : []),
+    ...((isTeacher || isAdmin) ? [{ to: "/maestros", icon: GraduationCap, label: "Maestros" }] : []),
     ...(isAdmin ? [{ to: "/admin", icon: Shield, label: "Admin" }] : []),
   ];
 

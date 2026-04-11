@@ -511,8 +511,8 @@ export default function AdminCursos() {
   const studentTasks = (studentId: string) => tasks.filter(t => t.student_id === studentId);
   const studentNotes = (studentId: string) => notes.filter(n => n.student_id === studentId);
 
-  const eventTypeLabels: Record<string, string> = { webinar: "Webinar", session: "Acompañamiento", class: "Ciclo Educativo" };
-  const eventTypeColors: Record<string, string> = { webinar: "bg-sage/20 text-sage-foreground", session: "bg-terracotta/20 text-terracotta-foreground", class: "bg-lavender/20 text-lavender-foreground" };
+  const eventTypeLabels: Record<string, string> = { webinar: "Webinar", session: "Acompañamiento", class: "Ciclo Educativo", teacher: "🌿 Capacitación Maestros" };
+  const eventTypeColors: Record<string, string> = { webinar: "bg-sage/20 text-sage-foreground", session: "bg-terracotta/20 text-terracotta-foreground", class: "bg-lavender/20 text-lavender-foreground", teacher: "bg-primary/10 text-primary" };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -569,7 +569,13 @@ export default function AdminCursos() {
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <Label>Categoría</Label>
-                  <Input value={courseForm.category} onChange={e => setCourseForm({ ...courseForm, category: e.target.value })} />
+                  <select value={courseForm.category} onChange={e => setCourseForm({ ...courseForm, category: e.target.value })}
+                    className="w-full h-10 rounded-xl border border-input bg-background px-3 text-sm">
+                    <option value="general">General</option>
+                    <option value="crianza">Crianza</option>
+                    <option value="homeschooling">Homeschooling</option>
+                    <option value="maestros">🌿 Para Maestros (Waldorf)</option>
+                  </select>
                 </div>
                 <div>
                   <Label>Precio (USD)</Label>
@@ -1004,6 +1010,7 @@ export default function AdminCursos() {
                     <option value="webinar">Webinar (público)</option>
                     <option value="session">Acompañamiento (privado)</option>
                     <option value="class">Ciclo Educativo (privado)</option>
+                    <option value="teacher">🌿 Capacitación para Maestros</option>
                   </select>
                 </div>
                 <div>
@@ -1096,6 +1103,7 @@ export default function AdminCursos() {
                     <option value="libro">Libro</option>
                     <option value="guia">Guía / Cuadernillo</option>
                     <option value="recurso">Recurso digital</option>
+                    <option value="maestro">🌿 Recurso para Maestros (Waldorf)</option>
                   </select>
                 </div>
                 <div>
