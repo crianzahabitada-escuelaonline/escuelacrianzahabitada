@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import {
   Plus, Trash2, Eye, EyeOff, Users, BookOpen, CheckCircle, Clock,
   ClipboardList, FileText, ChevronDown, ChevronUp, GraduationCap,
   Calendar, Video, Grip, Play, Upload, Image, File, Loader2,
-  ShoppingBag, DollarSign, Pencil,
+  ShoppingBag, DollarSign, Pencil, CreditCard, Search, X,
 } from "lucide-react";
 
 const BUCKET = "course-content";
@@ -40,6 +40,16 @@ type DigitalProduct = {
   id: string; title: string; description: string; author: string; price: number;
   product_type: string; cover_url: string; file_url: string; pages_info: string;
   is_published: boolean; created_at: string;
+};
+
+type Profile = {
+  id: string; full_name: string; email: string; country: string | null; phone: string | null;
+};
+
+type Subscription = {
+  id: string; user_id: string; plan: string; status: string; price_usd: number;
+  current_period_start: string | null; current_period_end: string | null;
+  mp_subscription_id: string | null; created_at: string;
 };
 
 // Upload helper
@@ -92,6 +102,23 @@ export default function AdminCursos() {
   const [digitalProducts, setDigitalProducts] = useState<DigitalProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [subCount, setSubCount] = useState(0);
+
+  // Memberships
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [showMemberForm, setShowMemberForm] = useState(false);
+  const [memberSearch, setMemberSearch] = useState("");
+  const [memberForm, setMemberForm] = useState({
+    user_id: "", plan: "mensual", status: "active",
+    price_usd: "0", current_period_start: "", current_period_end: "",
+  });
+  const [savingMember, setSavingMember] = useState(false);
+  const [editingSubId, setEditingSubId] = useState<string | null>(null);
+  const [editSubForm, setEditSubForm] = useState({
+    plan: "mensual", status: "active", price_usd: "0",
+    current_period_start: "", current_period_end: "",
+  });
+  const [savingEditSub, setSavingEditSub] = useState(false);
 
   // Course form
   const [showCourseForm, setShowCourseForm] = useState(false);
@@ -153,7 +180,7 @@ export default function AdminCursos() {
 
   async function loadAll() {
     setLoading(true);
-    const [coursesRes, lessonsRes, studentsRes, tasksRes, notesRes, eventsRes, subRes, resourcesRes, productsRes] = await Promise.all([
+    const [coursesRes, lessonsRes, studentsRes, tasksRes, notesRes, eventsRes, subRes, resourcesRes, productsRes, profilesRes, subsAllRes] = await Promise.all([
       supabase.from("courses").select("*").order("created_at", { ascending: false }),
       supabase.from("course_lessons").select("*").order("order_num"),
       supabase.from("students").select("*").order("full_name"),
@@ -163,6 +190,8 @@ export default function AdminCursos() {
       supabase.from("subscriptions").select("*", { count: "exact", head: true }).eq("status", "active"),
       supabase.from("course_resources").select("*").order("created_at", { ascending: false }),
       supabase.from("digital_products").select("*").order("created_at", { ascending: false }),
+      supabase.from("profiles").select("id, full_name, email, country, phone").order("full_name"),
+      supabase.from("subscriptions").select("*").order("created_at", { ascending: false }),
     ]);
     setCourses((coursesRes.data as Course[]) || []);
     setLessons((lessonsRes.data as Lesson[]) || []);
@@ -173,6 +202,8 @@ export default function AdminCursos() {
     setSubCount(subRes.count || 0);
     setResources((resourcesRes.data as Resource[]) || []);
     setDigitalProducts((productsRes.data as DigitalProduct[]) || []);
+    setProfiles((profilesRes.data as Profile[]) || []);
+    setSubscriptions((subsAllRes.data as Subscription[]) || []);
     setLoading(false);
   }
 
@@ -407,6 +438,64 @@ export default function AdminCursos() {
     toast.success("Producto eliminado");
   }
 
+  // ---- Membership CRUD ----
+  async function handleCreateMembership(e: React.FormEvent) {
+    e.preventDefault();
+    if (!memberForm.user_id) { toast.error("Seleccioná un usuario"); return; }
+    setSavingMember(true);
+    const { error } = await supabase.from("subscriptions").insert({
+      user_id: memberForm.user_id,
+      plan: memberForm.plan,
+      status: memberForm.status,
+      price_usd: parseFloat(memberForm.price_usd) || 0,
+      current_period_start: memberForm.current_period_start || null,
+      current_period_end: memberForm.current_period_end || null,
+    } as any);
+    setSavingMember(false);
+    if (error) { toast.error("Error: " + error.message); return; }
+    toast.success("Membresía creada");
+    setMemberForm({ user_id: "", plan: "mensual", status: "active", price_usd: "0", current_period_start: "", current_period_end: "" });
+    setMemberSearch("");
+    setShowMemberForm(false);
+    loadAll();
+  }
+
+  function startEditSub(sub: Subscription) {
+    setEditingSubId(sub.id);
+    setEditSubForm({
+      plan: sub.plan,
+      status: sub.status,
+      price_usd: String(sub.price_usd),
+      current_period_start: sub.current_period_start?.slice(0, 10) || "",
+      current_period_end: sub.current_period_end?.slice(0, 10) || "",
+    });
+  }
+
+  async function handleSaveEditSub(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingSubId) return;
+    setSavingEditSub(true);
+    const { error } = await supabase.from("subscriptions").update({
+      plan: editSubForm.plan,
+      status: editSubForm.status,
+      price_usd: parseFloat(editSubForm.price_usd) || 0,
+      current_period_start: editSubForm.current_period_start || null,
+      current_period_end: editSubForm.current_period_end || null,
+    } as any).eq("id", editingSubId);
+    setSavingEditSub(false);
+    if (error) { toast.error("Error: " + error.message); return; }
+    toast.success("Membresía actualizada");
+    setEditingSubId(null);
+    loadAll();
+  }
+
+  async function deleteSub(id: string) {
+    if (!confirm("¿Eliminar esta membresía?")) return;
+    await supabase.from("subscriptions").delete().eq("id", id);
+    loadAll();
+    toast.success("Membresía eliminada");
+  }
+
   if (!isAdmin) return <div className="p-8 text-center text-muted-foreground">No tienes acceso.</div>;
 
   const courseLessons = (courseId: string) => lessons.filter(l => l.course_id === courseId);
@@ -449,6 +538,7 @@ export default function AdminCursos() {
           <TabsTrigger value="products" className="rounded-xl gap-1"><ShoppingBag className="h-4 w-4" /> Productos</TabsTrigger>
           <TabsTrigger value="students" className="rounded-xl gap-1"><GraduationCap className="h-4 w-4" /> Estudiantes</TabsTrigger>
           <TabsTrigger value="calendar" className="rounded-xl gap-1"><Calendar className="h-4 w-4" /> Calendario</TabsTrigger>
+          <TabsTrigger value="memberships" className="rounded-xl gap-1"><CreditCard className="h-4 w-4" /> Membresías</TabsTrigger>
         </TabsList>
 
         {/* ===== COURSES TAB ===== */}
@@ -542,7 +632,6 @@ export default function AdminCursos() {
 
                   {isExpanded && (
                     <div className="border-t border-border p-4 space-y-5">
-                      {/* Edit Course Form */}
                       {editingCourseId === course.id && (
                         <form onSubmit={handleSaveEditCourse} className="bg-muted/30 rounded-xl p-4 space-y-3">
                           <h4 className="font-heading font-bold text-sm text-foreground flex items-center gap-1">
@@ -586,7 +675,6 @@ export default function AdminCursos() {
                         </form>
                       )}
 
-                      {/* Lessons */}
                       <div>
                         <div className="flex items-center justify-between">
                           <h4 className="font-heading font-bold text-sm text-foreground flex items-center gap-1">
@@ -604,7 +692,6 @@ export default function AdminCursos() {
                               onChange={e => setLessonForm({ ...lessonForm, title: e.target.value })} required />
                             <Textarea placeholder="Descripción" value={lessonForm.description}
                               onChange={e => setLessonForm({ ...lessonForm, description: e.target.value })} rows={2} />
-                            
                             <div className="space-y-2">
                               <Label className="text-xs font-medium">Video de la lección</Label>
                               {lessonForm.video_url ? (
@@ -624,7 +711,6 @@ export default function AdminCursos() {
                                 </div>
                               )}
                             </div>
-
                             <Input placeholder="Duración (ej: 15:30)" value={lessonForm.duration}
                               onChange={e => setLessonForm({ ...lessonForm, duration: e.target.value })} />
                             <div className="flex items-center gap-4">
@@ -716,7 +802,6 @@ export default function AdminCursos() {
                         )}
                       </div>
 
-                      {/* Resources / Digital Products */}
                       <div>
                         <div className="flex items-center justify-between">
                           <h4 className="font-heading font-bold text-sm text-foreground flex items-center gap-1">
@@ -812,7 +897,6 @@ export default function AdminCursos() {
                   </button>
                   {isExpanded && (
                     <div className="border-t border-border p-4 space-y-4">
-                      {/* Tasks */}
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="font-heading font-bold text-foreground text-sm flex items-center gap-1"><ClipboardList className="h-4 w-4" /> Tareas</h4>
@@ -845,7 +929,6 @@ export default function AdminCursos() {
                           ))}</div>
                         )}
                       </div>
-                      {/* Notes */}
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="font-heading font-bold text-foreground text-sm flex items-center gap-1"><FileText className="h-4 w-4" /> Notas</h4>
@@ -1109,6 +1192,211 @@ export default function AdminCursos() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ===== MEMBERSHIPS TAB ===== */}
+        <TabsContent value="memberships" className="space-y-4">
+          <Button onClick={() => setShowMemberForm(!showMemberForm)} className="rounded-xl gap-2">
+            <Plus className="h-4 w-4" /> Nueva Membresía
+          </Button>
+
+          {showMemberForm && (
+            <form onSubmit={handleCreateMembership} className="organic-card p-6 space-y-4">
+              <h3 className="font-heading font-bold text-foreground">Asignar Membresía Manual</h3>
+              <div>
+                <Label>Buscar usuario *</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    className="pl-9"
+                    placeholder="Buscar por nombre o email..."
+                    value={memberSearch}
+                    onChange={e => { setMemberSearch(e.target.value); setMemberForm({ ...memberForm, user_id: "" }); }}
+                  />
+                </div>
+                {memberSearch.length > 1 && !memberForm.user_id && (
+                  <div className="mt-1 border border-border rounded-xl overflow-hidden max-h-48 overflow-y-auto">
+                    {profiles
+                      .filter(p =>
+                        p.full_name.toLowerCase().includes(memberSearch.toLowerCase()) ||
+                        p.email.toLowerCase().includes(memberSearch.toLowerCase())
+                      )
+                      .slice(0, 8)
+                      .map(p => (
+                        <button key={p.id} type="button"
+                          className="w-full text-left px-4 py-2 hover:bg-muted/50 text-sm flex flex-col"
+                          onClick={() => { setMemberForm({ ...memberForm, user_id: p.id }); setMemberSearch(`${p.full_name} (${p.email})`); }}>
+                          <span className="font-medium text-foreground">{p.full_name}</span>
+                          <span className="text-xs text-muted-foreground">{p.email}</span>
+                        </button>
+                      ))}
+                    {profiles.filter(p =>
+                      p.full_name.toLowerCase().includes(memberSearch.toLowerCase()) ||
+                      p.email.toLowerCase().includes(memberSearch.toLowerCase())
+                    ).length === 0 && (
+                      <p className="px-4 py-2 text-sm text-muted-foreground">Sin resultados</p>
+                    )}
+                  </div>
+                )}
+                {memberForm.user_id && (
+                  <div className="mt-1 flex items-center gap-2 text-sm text-primary bg-primary/10 rounded-lg px-3 py-1">
+                    <CheckCircle className="h-3 w-3" />
+                    Usuario seleccionado
+                    <button type="button" onClick={() => { setMemberForm({ ...memberForm, user_id: "" }); setMemberSearch(""); }} className="ml-auto">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Plan</Label>
+                  <select value={memberForm.plan} onChange={e => setMemberForm({ ...memberForm, plan: e.target.value })}
+                    className="w-full h-10 rounded-xl border border-input bg-background px-3 text-sm">
+                    <option value="mensual">Mensual</option>
+                    <option value="anual">Anual</option>
+                    <option value="community">Community</option>
+                    <option value="manual">Manual</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>Estado</Label>
+                  <select value={memberForm.status} onChange={e => setMemberForm({ ...memberForm, status: e.target.value })}
+                    className="w-full h-10 rounded-xl border border-input bg-background px-3 text-sm">
+                    <option value="active">Activa</option>
+                    <option value="cancelled">Cancelada</option>
+                    <option value="paused">Pausada</option>
+                    <option value="pending">Pendiente</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label>Precio (USD)</Label>
+                  <Input type="number" step="0.01" min="0" value={memberForm.price_usd}
+                    onChange={e => setMemberForm({ ...memberForm, price_usd: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Inicio</Label>
+                  <Input type="date" value={memberForm.current_period_start}
+                    onChange={e => setMemberForm({ ...memberForm, current_period_start: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Vencimiento</Label>
+                  <Input type="date" value={memberForm.current_period_end}
+                    onChange={e => setMemberForm({ ...memberForm, current_period_end: e.target.value })} />
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button type="submit" disabled={savingMember || !memberForm.user_id} className="rounded-xl">
+                  {savingMember ? "Guardando..." : "Crear Membresía"}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => { setShowMemberForm(false); setMemberSearch(""); setMemberForm({ user_id: "", plan: "mensual", status: "active", price_usd: "0", current_period_start: "", current_period_end: "" }); }} className="rounded-xl">
+                  Cancelar
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {subscriptions.length === 0 ? (
+            <p className="text-muted-foreground text-sm text-center py-8">No hay membresías registradas.</p>
+          ) : (
+            <div className="space-y-3">
+              {subscriptions.map(sub => {
+                const profile = profiles.find(p => p.id === sub.user_id);
+                const isEditing = editingSubId === sub.id;
+                return (
+                  <div key={sub.id} className="organic-card overflow-hidden">
+                    <div className="p-4 flex items-start gap-4">
+                      <div className="p-2 rounded-xl bg-primary/10"><CreditCard className="h-5 w-5 text-primary" /></div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            sub.status === "active" ? "bg-green-100 text-green-700"
+                            : sub.status === "cancelled" ? "bg-red-100 text-red-700"
+                            : sub.status === "paused" ? "bg-yellow-100 text-yellow-700"
+                            : "bg-muted text-muted-foreground"
+                          }`}>{sub.status === "active" ? "Activa" : sub.status === "cancelled" ? "Cancelada" : sub.status === "paused" ? "Pausada" : sub.status}</span>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-lavender/20 text-lavender-foreground capitalize">{sub.plan}</span>
+                          <span className="text-xs text-muted-foreground flex items-center gap-0.5"><DollarSign className="h-3 w-3" />USD {sub.price_usd}</span>
+                        </div>
+                        <p className="font-medium text-foreground">{profile?.full_name || "Usuario desconocido"}</p>
+                        <p className="text-xs text-muted-foreground">{profile?.email}</p>
+                        {(sub.current_period_start || sub.current_period_end) && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {sub.current_period_start && `Desde: ${new Date(sub.current_period_start).toLocaleDateString("es")}`}
+                            {sub.current_period_start && sub.current_period_end && " · "}
+                            {sub.current_period_end && `Hasta: ${new Date(sub.current_period_end).toLocaleDateString("es")}`}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="outline" onClick={() => isEditing ? setEditingSubId(null) : startEditSub(sub)} className="rounded-xl">
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => deleteSub(sub.id)} className="rounded-xl">
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {isEditing && (
+                      <form onSubmit={handleSaveEditSub} className="border-t border-border p-4 space-y-3 bg-muted/20">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-xs">Plan</Label>
+                            <select value={editSubForm.plan} onChange={e => setEditSubForm({ ...editSubForm, plan: e.target.value })}
+                              className="w-full h-9 rounded-xl border border-input bg-background px-3 text-sm">
+                              <option value="mensual">Mensual</option>
+                              <option value="anual">Anual</option>
+                              <option value="community">Community</option>
+                              <option value="manual">Manual</option>
+                            </select>
+                          </div>
+                          <div>
+                            <Label className="text-xs">Estado</Label>
+                            <select value={editSubForm.status} onChange={e => setEditSubForm({ ...editSubForm, status: e.target.value })}
+                              className="w-full h-9 rounded-xl border border-input bg-background px-3 text-sm">
+                              <option value="active">Activa</option>
+                              <option value="cancelled">Cancelada</option>
+                              <option value="paused">Pausada</option>
+                              <option value="pending">Pendiente</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <Label className="text-xs">Precio (USD)</Label>
+                            <Input type="number" step="0.01" min="0" value={editSubForm.price_usd}
+                              onChange={e => setEditSubForm({ ...editSubForm, price_usd: e.target.value })} className="h-9" />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Inicio</Label>
+                            <Input type="date" value={editSubForm.current_period_start}
+                              onChange={e => setEditSubForm({ ...editSubForm, current_period_start: e.target.value })} className="h-9" />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Vencimiento</Label>
+                            <Input type="date" value={editSubForm.current_period_end}
+                              onChange={e => setEditSubForm({ ...editSubForm, current_period_end: e.target.value })} className="h-9" />
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button type="submit" size="sm" disabled={savingEditSub} className="rounded-xl">
+                            {savingEditSub ? "..." : "Guardar"}
+                          </Button>
+                          <Button type="button" size="sm" variant="ghost" onClick={() => setEditingSubId(null)} className="rounded-xl">Cancelar</Button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </TabsContent>
