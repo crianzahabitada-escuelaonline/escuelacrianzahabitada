@@ -53,6 +53,39 @@ export type Database = {
         }
         Relationships: []
       }
+      community_groups: {
+        Row: {
+          age_range: string | null
+          created_at: string
+          description: string
+          display_order: number
+          emoji: string
+          id: string
+          label: string
+          slug: string
+        }
+        Insert: {
+          age_range?: string | null
+          created_at?: string
+          description?: string
+          display_order?: number
+          emoji?: string
+          id?: string
+          label: string
+          slug: string
+        }
+        Update: {
+          age_range?: string | null
+          created_at?: string
+          description?: string
+          display_order?: number
+          emoji?: string
+          id?: string
+          label?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       course_lessons: {
         Row: {
           course_id: string
@@ -260,6 +293,88 @@ export type Database = {
         }
         Relationships: []
       }
+      group_content: {
+        Row: {
+          content_type: string
+          cover_url: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          duration: string | null
+          file_url: string | null
+          group_id: string
+          id: string
+          is_published: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content_type?: string
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          duration?: string | null
+          file_url?: string | null
+          group_id: string
+          id?: string
+          is_published?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content_type?: string
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          duration?: string | null
+          file_url?: string | null
+          group_id?: string
+          id?: string
+          is_published?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_content_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "community_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_members: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "community_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_purchases: {
         Row: {
           amount: number
@@ -339,6 +454,42 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      student_groups: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_groups_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "community_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_groups_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_notes: {
         Row: {
