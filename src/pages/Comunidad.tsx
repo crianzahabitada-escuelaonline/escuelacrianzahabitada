@@ -54,10 +54,20 @@ export default function Comunidad() {
       .eq("user_id", user.id);
 
     // Memberships via students (tutor)
-    const { data: studentMemberships } = await supabase
-      .from("student_groups")
-      .select("group_id, students!inner(tutor_id)")
-      .filter("students.tutor_id", "eq", user.id);
+    const { data: myStudents } = await supabase
+      .from("students")
+      .select("id")
+      .eq("tutor_id", user.id);
+    
+    let studentMemberships: { group_id: string }[] = [];
+    if (myStudents && myStudents.length > 0) {
+      const studentIds = myStudents.map(s => s.id);
+      const { data } = await supabase
+        .from("student_groups")
+        .select("group_id")
+        .in("student_id", studentIds);
+      studentMemberships = data || [];
+    }
 
     const groupIds = new Set<string>();
     directMemberships?.forEach(m => groupIds.add(m.group_id));
