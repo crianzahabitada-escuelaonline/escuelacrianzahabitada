@@ -71,7 +71,7 @@ export default function Comunidad() {
 
     const groupIds = new Set<string>();
     directMemberships?.forEach(m => groupIds.add(m.group_id));
-    studentMemberships?.forEach((m: any) => groupIds.add(m.group_id));
+    studentMemberships.forEach(m => groupIds.add(m.group_id));
     setUserGroups(Array.from(groupIds));
   }
 
